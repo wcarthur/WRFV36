@@ -1,0 +1,84 @@
+########################################################################################################################
+#ARCH    Linux i486 i586 i686, Intel compiler    # serial serial_NO_GRIB2 dmpar dmpar_NO_GRIB2
+#
+COMPRESSION_LIBS    = CONFIGURE_COMP_L
+COMPRESSION_INC     = CONFIGURE_COMP_I
+FDEFS               = CONFIGURE_FDEFS
+SFC                 = ifort
+SCC                 = icc
+DM_FC               = mpif90 -f90=ifort
+DM_CC               = mpicc -cc=icc
+FC                  = CONFIGURE_FC
+CC                  = CONFIGURE_CC 
+LD                  = $(FC)
+FFLAGS              = -FR -convert big_endian
+F77FLAGS            = -FI -convert big_endian
+FCSUFFIX            =
+FNGFLAGS            = $(FFLAGS)
+LDFLAGS             =
+CFLAGS              = -w
+CPP                 = /lib/cpp -P -traditional
+CPPFLAGS            = -D_UNDERSCORE -DBYTESWAP -DLINUX -DIO_NETCDF -DIO_BINARY -DIO_GRIB1 -DBIT32 CONFIGURE_MPI
+ARFLAGS             =
+CC_TOOLS            =
+
+########################################################################################################################
+#ARCH    Linux x86_64, Intel compiler   # serial serial_NO_GRIB2 dmpar dmpar_NO_GRIB2
+#
+COMPRESSION_LIBS    = CONFIGURE_COMP_L
+COMPRESSION_INC     = CONFIGURE_COMP_I
+FDEFS               = CONFIGURE_FDEFS
+SFC                 = ifort
+SCC                 = icc
+DM_FC               = mpif90 -f90=ifort
+DM_CC               = mpicc -cc=icc
+FC                  = CONFIGURE_FC
+CC                  = CONFIGURE_CC
+LD                  = $(FC)
+FFLAGS              = -FR -convert big_endian
+F77FLAGS            = -FI -convert big_endian
+FCSUFFIX            = 
+FNGFLAGS            = $(FFLAGS)
+LDFLAGS             = 
+CFLAGS              = -w
+CPP                 = /lib/cpp -P -traditional
+CPPFLAGS            = -D_UNDERSCORE -DBYTESWAP -DLINUX -DIO_NETCDF -DIO_BINARY -DIO_GRIB1 -DBIT32 CONFIGURE_MPI
+ARFLAGS             =
+CC_TOOLS            = 
+
+########################################################################################################################
+#ARCH    NULL   # serial serial_NO_GRIB2 dmpar dmpar_NO_GRIB2
+
+#DM_FC              = 
+#DM_CC              = 
+#FC                 = 
+#SFC                = 
+#LD                 = 
+#RWORDSIZE          = 
+#PROMOTION          = 
+#FCOPTIM            = 
+#FCREDUCEDOPT       = 
+#FCNOOPT            = 
+#FCDEBUG            = 
+#FORMAT_FIXED       = 
+#FORMAT_FREE        = 
+#FCSUFFIX           = 
+#BYTESWAPIO         = 
+#FCBASEOPTS         = 
+#MODULE_SRCH_FLAG   =
+#TRADFLAG           = 
+#CPP                = 
+#AR                 = 
+#FFLAGS             = 
+#F77FLAGS           = 
+#FCSUFFIX           = 
+#FNGFLAGS           = 
+#LDFLAGS            = 
+#CC                 = 
+#SCC                = 
+#CFLAGS             =
+#CPP                = 
+#CPPFLAGS           = 
+#ARFLAGS            =
+#RANLIB              = 
+#CC_TOOLS            = 

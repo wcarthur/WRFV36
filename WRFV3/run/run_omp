@@ -1,0 +1,16 @@
+#!/bin/tcsh
+#PBS -l walltime=1200
+#PBS -l mem=4000MB
+#PBS -l ncpus=16
+#PBS -j oe
+#PBS -q normal
+#PBS -l wd
+
+module load openmpi
+
+limit stacksize unlimited
+setenv KMP_AFFINITY compact,verbose
+setenv OMP_NUM_THREADS 16
+echo running with $OMP_NUM_THREADS threads
+
+time ./wrf.exe >& wrf.out
