@@ -113,8 +113,11 @@ SUBROUTINE update_phy_ten(rph_tendf,rt_tendf,ru_tendf,rv_tendf,moist_tendf, &
 !------------------------------------------------------------------
 !  set up loop bounds for this grid's boundary conditions
 
+#ifndef WRFLES
+! Tak Yamaguchi 2011/03 Allow radiative forcing for LES with ra_lw_physics=ra_sw_physics=0
    if (config_flags%ra_lw_physics .gt. 0 .or.                  &
        config_flags%ra_sw_physics .gt. 0)                      &
+#endif /*WRFLES*/
       CALL phy_ra_ten(config_flags,rt_tendf,RTHRATEN,          &
                       ids, ide, jds, jde, kds, kde,            &
                       ims, ime, jms, jme, kms, kme,            &

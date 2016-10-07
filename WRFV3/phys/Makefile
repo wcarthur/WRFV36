@@ -66,6 +66,7 @@ MODULES = \
 	module_cu_osas.o \
 	module_mp_radar.o \
 	module_mp_kessler.o \
+        module_mp_feingold2m.o \
 	module_mp_lin.o  \
 	module_mp_sbu_ylin.o  \
 	module_mp_wsm3.o \
@@ -79,6 +80,7 @@ MODULES = \
 	module_mp_fast_sbm.o \
 	module_mp_gsfcgce.o \
 	module_mp_morr_two_moment.o \
+        module_mp_morr_full_two_moment.o \
 	module_mp_milbrandt2mom.o \
 	module_mp_nssl_2mom.o \
 	module_mp_wdm5.o \
@@ -97,6 +99,7 @@ MODULES = \
         module_ra_flg.o \
 	module_ra_HWRF.o \
 	module_ra_hs.o  \
+        module_ra_dyclw.o  \
 	module_ra_aerosol.o  \
 	module_sf_sfclay.o \
 	module_sf_sfclayrev.o \

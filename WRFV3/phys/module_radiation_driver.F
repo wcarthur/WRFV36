@@ -143,7 +143,11 @@ CONTAINS
                                        ,GFDLSWSCHEME, CAMLWSCHEME, CAMSWSCHEME &
                                        ,HELDSUAREZ                      &
 #ifdef HWRF
-                                       ,HWRFSWSCHEME, HWRFLWSCHEME  &
+                                       ,HWRFSWSCHEME, HWRFLWSCHEME      &
+#endif
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03 WRFLES
+                                       ,DYCSIMPLE                       &
 #endif
                                        ,goddardlwscheme                 & 
                                        ,goddardswscheme                 &  
@@ -176,6 +180,12 @@ CONTAINS
 
    USE module_ra_aerosol    , ONLY : calc_aerosol_goddard_sw, &
                                      calc_aerosol_rrtmg_sw
+
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03 WRFLES
+   USE module_wrfles, ONLY: wrfles_radforcing
+   USE module_ra_dyclw
+#endif /*WRFLES*/
 
    !  This driver calls subroutines for the radiation parameterizations.
    !
@@ -688,7 +698,10 @@ CONTAINS
    CALL wrf_debug (1, 'Top of Radiation Driver')
 !  WRITE ( wrf_err_message , * ) 'itimestep = ',itimestep,', dt = ',dt,', lw and sw options = ',lw_physics,sw_physics
 !  CALL wrf_debug (1, wrf_err_message )
+#ifndef WRFLES
+! Tak Yamaguchi 2012/03 Allow radiative forcing with lw_physics=sw_physics=0
    if (lw_physics .eq. 0 .and. sw_physics .eq. 0)         return
+#endif /*WRFLES*/
 
 ! ra_call_offset = -1 gives old method where radiation may be called just before output
 ! ra_call_offset =  0 gives new method where radiation may be called just after output
@@ -1374,10 +1387,28 @@ CONTAINS
           CALL wrf_debug(100, 'a4 Fu_Liou-Gu')
 ! -- end 
 
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03 WRFLES
+        CASE (DYCSIMPLE)
+             CALL wrf_debug (100, 'CALL simple LW parameterization')
+                                                                                                                                     
+             CALL DYCLW(RTHRATEN,qv,qc,qr,rho,z,dz8w,      &
+                     itimestep,dt,t,pi,                    &
+                     ids,ide, jds,jde, kds,kde,            &
+                     ims,ime, jms,jme, kms,kme,            &
+                     its,ite, jts,jte, kts,kte           )
+#endif /*WRFLES*/
+
         CASE DEFAULT
-  
+
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03 Apply radiative forcing or no radiation
+             CALL wrf_debug (100, 'CALL wrfles_radforcing')
+             CALL wrfles_radforcing( z, pi, RTHRATEN, its, ite, jts, jte, kts, kte )
+#else 
              WRITE( wrf_err_message , * ) 'The longwave option does not exist: lw_physics = ', lw_physics
              CALL wrf_error_fatal ( wrf_err_message )
+#endif /*WRFLES*/
            
      END SELECT lwrad_select    
 
@@ -1747,6 +1778,12 @@ CONTAINS
 
         CASE (0)
 
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03 WRFLES
+! It is allowed to have LW radiation only
+        RTHRATENSW(its:ite,kts:kte,jts:jte)=0.
+#else
+
            ! Here in case we don't want to call a sw radiation scheme
            ! For example, the Held-Suarez idealized test case
            IF (lw_physics /= HELDSUAREZ) THEN
@@ -1754,6 +1791,7 @@ CONTAINS
 'You have selected a longwave radiation option, but not a shortwave option (sw_physics = 0, lw_physics = ',lw_physics,')'
              CALL wrf_error_fatal ( wrf_err_message )
            END IF
+#endif /*WRFLES*/
 
 ! -- add by Jin Kong 10/2011
 !--- the following FLGSWSCHEME is for testing only
@@ -1879,9 +1917,8 @@ CONTAINS
       jte = j_end(ij)
       call interp_sw_radiation(ims,ime,jms,jme,its,ite,jts,jte,  &
                                coszen_ref,coszen_loc,swddir_ref, &
-                               bb,Bx,swdown_ref,gg,Gx,albedo,    &
-                               swdown,swddir,swddni,swddif,gsw   )
-
+                               bb,Bx,swdown_ref,gg,Gx,           &
+                               swdown,swddir,swddni,swddif       )
     enddo
     !$OMP END PARALLEL DO
  end if
@@ -2290,18 +2327,16 @@ CONTAINS
 
    subroutine interp_sw_radiation(ims,ime,jms,jme,its,ite,jts,jte,  &
                                   coszen_ref,coszen_loc,swddir_ref, &
-                                  bb,Bx,swdown_ref,gg,Gx,albedo,    &
-                                  swdown,swddir,swddni,swddif,gsw   )
+                                  bb,Bx,swdown_ref,gg,Gx,           &
+                                  swdown,swddir,swddni,swddif       )
       ! Author: jararias 2013/11
       implicit None
       integer, intent(in) :: ims,ime,jms,jme,its,ite,jts,jte
       real, dimension(ims:ime,jms:jme), intent(in) :: coszen_ref,coszen_loc, &
                                                       swddir_ref,Bx,bb,      &
-                                                      swdown_ref,Gx,gg,      &
-                                                      albedo
-
+                                                      swdown_ref,Gx,gg       
       real, dimension(ims:ime,jms:jme), intent(inout) :: swddir,swdown, &
-                                                         swddif,swddni, gsw
+                                                         swddif,swddni    
 
       integer :: i,j
       real, parameter :: coszen_min=1e-4
@@ -2322,13 +2357,11 @@ CONTAINS
                end if
                swddif(i,j) =swdown(i,j)-swddir(i,j)
                swddni(i,j) =swddir(i,j)/coszen_loc(i,j)
-               gsw(i,j)    =swdown(i,j)*(1.-albedo(i,j))
             else
                swddir(i,j) =0.
                swdown(i,j) =0.
                swddif(i,j) =0.
                swddni(i,j) =0.
-               gsw(i,j)    =0.
             end if
          end do
       end do

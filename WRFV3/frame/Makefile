@@ -32,7 +32,10 @@ MODULES =       module_driver_constants.o  \
                 module_io_quilt.o          \
 		module_intermediate_nmm.o  \
 		module_cpl.o               \
-		module_cpl_oasis3.o
+		module_cpl_oasis3.o        \
+                module_statistics.o        \
+                module_wrfles.o            \
+                module_lagrangian_parcel_tracker.o
 ALOBJS =\
                 module_alloc_space_0.o       \
                 module_alloc_space_1.o       \

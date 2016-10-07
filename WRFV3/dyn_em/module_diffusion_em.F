@@ -1220,6 +1220,11 @@
 !-----------------------------------------------------------------------
 ! Begin declarations.
 
+#ifdef WRFLES
+	! Tak Yamaguchi 2012/07
+	USE module_wrfles, ONLY: dosgsdif
+#endif /*WRFLES*/
+
     IMPLICIT NONE
 
     TYPE( grid_config_rec_type ), INTENT( IN )  &
@@ -1283,6 +1288,22 @@
 
 ! Select a scheme for calculating diffusion coefficients.
 
+#ifdef WRFLES
+	! Tak Yamaguchi 2012/07 - No SGS diffusion
+	IF ( .NOT.dosgsdif ) THEN
+		DO j = j_start, j_end
+			DO k = kts, ktf
+				DO i = i_start, i_end
+					xkmh(i,k,j) = 0.
+					xkmv(i,k,j) = 0.
+					xkhh(i,k,j) = 0.
+					xkhv(i,k,j) = 0.
+				ENDDO
+			ENDDO
+		ENDDO
+	ELSE
+#endif /*WRFLES*/
+
     km_coef: SELECT CASE( config_flags%km_opt )
 
       CASE (1)
@@ -1321,6 +1342,11 @@
             CALL wrf_error_fatal( 'Please choose diffusion coefficient scheme' )
 
     END SELECT km_coef
+
+#ifdef WRFLES
+	! Tak Yamaguchi 2012/07 - No SGS diffusion
+	ENDIF   ! IF dosgsdif
+#endif /*WRFLES*/
 
     IF ( damp_opt .eq. 1 ) THEN
       CALL cal_dampkm( config_flags, xkmh, xkhh, xkmv, xkhv,    &
@@ -3411,6 +3437,12 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
 !-----------------------------------------------------------------------
 ! Begin declarations.
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03
+	USE module_statistics, ONLY: docollect_data, uwsb_eta, vwsb_eta, twsb_eta, mwsb_eta, ewsb_eta, &
+	                             swsb_eta, flux_eta
+#endif /*WRFSTAT*/
+
    IMPLICIT NONE
 
    TYPE(grid_config_rec_type), INTENT(IN   ) :: config_flags
@@ -3597,6 +3629,13 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
        tao_xz=ustar*ustar*u_2(i,kts,j)/V0_u
        ru_tendf(i,kts,j)=ru_tendf(i,kts,j)            &
                          -0.25*(mu(i,j)+mu(i-1,j))*tao_xz*(rdzw(i,kts,j)+rdzw(i-1,kts,j))
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	! Values for ite > ide-1 are not required...
+	IF ( docollect_data ) uwsb_eta(i,kts,j) = - tao_xz   ! m2/s2
+#endif /*WRFSTAT*/
+
     ENDDO
     ENDDO
  
@@ -3613,6 +3652,13 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
        tao_yz=ustar*ustar*v_2(i,kts,j)/V0_v
        rv_tendf(i,kts,j)=rv_tendf(i,kts,j)            &
                          -0.25*(mu(i,j)+mu(i,j-1))*tao_yz*(rdzw(i,kts,j)+rdzw(i,kts,j-1))
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	! Values for jte > jde-1 are not required...
+	IF ( docollect_data ) vwsb_eta(i,kts,j) = - tao_yz   ! m2/s2
+#endif /*WRFSTAT*/
+
     ENDDO
     ENDDO
 
@@ -3654,6 +3700,18 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
                               ims, ime, jms, jme, kms, kme,          &
                               its, ite, jts, jte, kts, kte          )
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = j_start, j_end
+			DO k = kts+1, MIN(kte,kde-1)
+				DO i = i_start, i_end
+					twsb_eta(i,k,j) = flux_eta(i,k,j)   ! K m/s
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
 
 !*****************************************
 !*****************************************
@@ -3682,6 +3740,11 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
        rt_tendf(i,kts,j)=rt_tendf(i,kts,j)  &
             +mu(i,j)*heat_flux*rdzw(i,kts,j)
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) twsb_eta(i,kts,j) = heat_flux   ! K m/s
+#endif /*WRFSTAT*/
+
     ENDDO
     ENDDO
 
@@ -3703,6 +3766,20 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
                               ids, ide, jds, jde, kds, kde,         &
                               ims, ime, jms, jme, kms, kme,         &
                               its, ite, jts, jte, kts, kte         )
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = j_start, j_end
+			DO k = kts+1, MIN(kte,kde-1)
+				DO i = i_start, i_end
+					ewsb_eta(i,k,j) = flux_eta(i,k,j)   ! m3/s3
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
    endif
  
    IF (n_moist .ge. PARAM_FIRST_SCALAR) THEN 
@@ -3741,6 +3818,19 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
                                      ims, ime, jms, jme, kms, kme,        &
                                      its, ite, jts, jte, kts, kte        )
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = j_start, j_end
+			DO k = kts+1, MIN(kte,kde-1)
+				DO i = i_start, i_end
+					mwsb_eta(i,k,j,im) = flux_eta(i,k,j)   ! kg/kg m/s
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
 !*****************************************
 !*****************************************
 !MODIFICATIONS for water vapor flux
@@ -3756,6 +3846,12 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
           moist_flux = qfx(i,j)/rho(i,1,j)/(1.+moist(i,kts,j,P_QV))
           moist_tendf(i,kts,j,im)=moist_tendf(i,kts,j,im)  &
                +mu(i,j)*moist_flux*rdzw(i,kts,j)
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) mwsb_eta(i,kts,j,im) = moist_flux   ! kg/kg m/s
+#endif /*WRFSTAT*/
+
        ENDDO
        ENDDO
     ENDIF
@@ -3816,6 +3912,20 @@ SUBROUTINE vertical_diffusion_2   ( ru_tendf, rv_tendf, rw_tendf, rt_tendf,   &
                                      ids, ide, jds, jde, kds, kde,         &
                                      ims, ime, jms, jme, kms, kme,         &
                                      its, ite, jts, jte, kts, kte         )
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = j_start, j_end
+			DO k = kts+1, MIN(kte,kde-1)
+				DO i = i_start, i_end
+					swsb_eta(i,k,j,im) = flux_eta(i,k,j)   ! scalar_unit m/s
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
      ENDDO scalar_loop
 
    ENDIF
@@ -3835,6 +3945,11 @@ SUBROUTINE vertical_diffusion_u_2( tendency, config_flags, mu,            &
 
 !-----------------------------------------------------------------------
 ! Begin declarations.
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03
+	USE module_statistics, ONLY: docollect_data, uwsb_eta
+#endif /*WRFSTAT*/
 
    IMPLICIT NONE
 
@@ -3921,6 +4036,21 @@ SUBROUTINE vertical_diffusion_u_2( tendency, config_flags, mu,            &
       ENDDO
       ENDDO
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	! rdaw = 1/dzw in height coordinate
+	! tutau3 in height coordinate
+	IF ( docollect_data ) THEN
+		DO j = j_start, j_end
+			DO k = kts+1, ktf
+				DO i = i_start, MIN(ite,ide-1)
+					uwsb_eta(i,k,j) = titau3(i,k,j) / ( 0.5 * ( mu(i-1,j) + mu(i,j) ) )   ! m2/s2
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
 ! ******** MODIF...
 !  we will pick up the surface drag (titau3(i,kts,j)) later
 !
@@ -3948,6 +4078,11 @@ SUBROUTINE vertical_diffusion_v_2( tendency, config_flags, mu,            &
                                    its, ite, jts, jte, kts, kte          )
 !-----------------------------------------------------------------------
 ! Begin declarations.
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03
+	USE module_statistics, ONLY: docollect_data, vwsb_eta
+#endif /*WRFSTAT*/
 
    IMPLICIT NONE
 
@@ -4033,6 +4168,19 @@ SUBROUTINE vertical_diffusion_v_2( tendency, config_flags, mu,            &
    ENDDO
    ENDDO
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = j_start, MIN(jte,jde-1)
+			DO k = kts+1, ktf
+				DO i = i_start, i_end
+					vwsb_eta(i,k,j) = titau3(i,k,j) / ( 0.5 * ( mu(i,j-1) + mu(i,j) ) )   ! m2/s2
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
 ! ******** MODIF...
 !  we will pick up the surface drag (titau3(i,kts,j)) later
 !
@@ -4063,6 +4211,11 @@ SUBROUTINE vertical_diffusion_w_2(tendency, config_flags, mu,             &
 
 !-----------------------------------------------------------------------
 ! Begin declarations.
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03
+	USE module_statistics, ONLY: docollect_data, wwsb_eta
+#endif /*WRFSTAT*/
 
    IMPLICIT NONE
 
@@ -4149,6 +4302,19 @@ SUBROUTINE vertical_diffusion_w_2(tendency, config_flags, mu,             &
    ENDDO
    ENDDO
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = j_start, j_end
+			DO k = kts+1, ktf
+				DO i = i_start, i_end
+					wwsb_eta(i,k,j) = titau3(i,k,j) / mu(i,j)   ! m2/s2
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
 END SUBROUTINE vertical_diffusion_w_2
 
 !=======================================================================
@@ -4163,6 +4329,11 @@ SUBROUTINE vertical_diffusion_s( tendency, config_flags, var, mu, xkhv,   &
 
 !-----------------------------------------------------------------------
 ! Begin declarations.
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	USE module_statistics, ONLY: docollect_data, flux_eta
+#endif /*WRFSTAT*/
 
    IMPLICIT NONE
 
@@ -4264,6 +4435,19 @@ SUBROUTINE vertical_diffusion_s( tendency, config_flags, var, mu, xkhv,   &
    ENDDO
    ENDDO
    ENDDO
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Output vertical flux
+	IF ( docollect_data ) THEN
+		DO j = j_start, j_end
+			DO k = kts, ktf
+				DO i = i_start, i_end
+					flux_eta(i,k,j) = H3(i,k,j)   ! scalar_unit m/s
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
 
    IF (doing_tke) THEN
       DO j = j_start, j_end
@@ -5070,6 +5254,15 @@ END SUBROUTINE phy_bc
 !-----------------------------------------------------------------------
 ! Begin declarations.
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03
+	USE module_statistics, ONLY: docollect_data, e_shear_eta, e_buoy_eta, e_diss_eta
+#endif /*WRFSTAT*/
+#ifdef WRFLPT
+	! Tak Yamaguchi 2012/05
+	USE module_lagrangian_parcel_tracker, ONLY: flag_lpt_3Dget, flag_lpt_sgs, diss3D
+#endif /*WRFLPT*/
+
     IMPLICIT NONE
 
     TYPE( grid_config_rec_type ), INTENT( IN )  &
@@ -5114,6 +5307,19 @@ END SUBROUTINE phy_bc
 ! End declarations.
 !-----------------------------------------------------------------------
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = jts, MIN(jte,jde-1)
+			DO k = kts, MIN(kte,kde-1)
+				DO i = its, MIN(ite,ide-1)
+					e_shear_eta(i,k,j) = tendency(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
     CALL tke_shear(    tendency, config_flags,                &
                        defor11, defor22, defor33,             &
                        defor12, defor13, defor23,             &
@@ -5125,12 +5331,53 @@ END SUBROUTINE phy_bc
                        ims, ime, jms, jme, kms, kme,          &
                        its, ite, jts, jte, kts, kte           )
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = jts, MIN(jte,jde-1)
+			DO k = kts, MIN(kte,kde-1)
+				DO i = its, MIN(ite,ide-1)
+					e_shear_eta(i,k,j) = ( tendency(i,k,j) - e_shear_eta(i,k,j) ) / mu(i,j)
+					e_buoy_eta(i,k,j) = tendency(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF 
+#endif /*WRFSTAT*/
+
     CALL tke_buoyancy( tendency, config_flags, mu,            &
                        tke, xkhv, BN2, theta, dt,             &
                        hfx, qfx, qv,  rho,                    &
                        ids, ide, jds, jde, kds, kde,          &
                        ims, ime, jms, jme, kms, kme,          &
                        its, ite, jts, jte, kts, kte           ) 
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = jts, MIN(jte,jde-1)
+			DO k = kts, MIN(kte,kde-1)
+				DO i = its, MIN(ite,ide-1)
+					e_buoy_eta(i,k,j) = ( tendency(i,k,j) - e_buoy_eta(i,k,j) ) / mu(i,j)
+					e_diss_eta(i,k,j) = tendency(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF 
+#endif /*WRFSTAT*/
+#ifdef WRFLPT
+	! Tak Yamaguchi 2012/05 - Collect data for module_lagrangian_parcel_tracker
+	! diss3D(k,i,j) not (i,k,j)
+	IF ( flag_lpt_3Dget .AND. flag_lpt_sgs ) THEN
+		DO j = jts, MIN(jte,jde-1)
+			DO k = kts, MIN(kte,kde-1)
+				DO i = its, MIN(ite,ide-1)
+					diss3D(k,i,j) = tendency(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFLPT*/
 
     CALL tke_dissip(   tendency, config_flags,                &
                        mu, tke, bn2, theta, p8w, t8w, z,      &
@@ -5139,6 +5386,34 @@ END SUBROUTINE phy_bc
                        ids, ide, jds, jde, kds, kde,          &
                        ims, ime, jms, jme, kms, kme,          &
                        its, ite, jts, jte, kts, kte           )
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data ) THEN
+		DO j = jts, MIN(jte,jde-1)
+			DO k = kts, MIN(kte,kde-1)
+				DO i = its, MIN(ite,ide-1)
+					e_diss_eta(i,k,j) = ( tendency(i,k,j) - e_diss_eta(i,k,j) ) / mu(i,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF 
+#endif /*WRFSTAT*/
+#ifdef WRFLPT
+	! Tak Yamaguchi 2012/05 - Collect data for module_lagrangian_parcel_tracker
+	! diss3D(k,i,j) not (i,k,j)
+	IF ( flag_lpt_3Dget .AND. flag_lpt_sgs ) THEN
+		DO j = jts, MIN(jte,jde-1)
+			DO k = kts, MIN(kte,kde-1)
+				DO i = its, MIN(ite,ide-1)
+					! Return positivery defined value
+					diss3D(k,i,j) = - ( tendency(i,k,j) - diss3D(k,i,j) ) / mu(i,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFLPT*/
+
 
 ! Set a lower limit on TKE.
 

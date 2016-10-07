@@ -78,6 +78,8 @@ module_integrate.o: \
 		module_nesting.o \
 		module_configure.o \
 		module_cpl.o \
+                module_statistics.o \
+                module_lagrangian_parcel_tracker.o \
 		$(ESMF_MOD_DEPENDENCE)
 
 module_intermediate_nmm.o: \
@@ -146,6 +148,26 @@ module_cpl.o: \
 
 module_cpl_oasis3.o: module_driver_constants.o \
                      module_domain.o
+
+module_statistics.o: module_dm.o \
+                     module_domain.o \
+                     module_configure.o \
+                     module_state_description.o \
+                     module_nesting.o \
+                     ../share/module_model_constants.o
+
+module_wrfles.o : module_dm.o \
+                  module_domain.o \
+                  module_state_description.o \
+                  module_statistics.o \
+                  ../share/module_model_constants.o
+
+module_lagrangian_parcel_tracker.o: module_dm.o \
+                                    module_domain.o \
+                                    module_configure.o \
+                                    module_state_description.o \
+                                    module_statistics.o \
+                                    ../share/module_model_constants.o
 
 # End of DEPENDENCIES for frame
 
@@ -330,7 +352,10 @@ module_ra_cam_support.o: module_cam_support.o \
 module_ra_cam.o: module_ra_cam_support.o \
 		 module_cam_support.o \
 		 module_ra_clWRF_support.o \
-                ../frame/module_wrf_error.o
+                ../frame/module_wrf_error.o \
+                ../frame/module_statistics.o
+
+module_ra_dyclw.o: ../frame/module_statistics.o
 
 module_mp_lin.o : ../frame/module_wrf_error.o \
 		module_mp_radar.o
@@ -461,10 +486,12 @@ module_sf_ruclsm.o: ../frame/module_wrf_error.o module_data_gocart_dust.o
 
 module_sf_pxlsm.o: ../share/module_model_constants.o module_sf_pxlsm_data.o
 
-module_ra_rrtmg_sw.o: module_ra_rrtmg_lw.o
+module_ra_rrtmg_sw.o: module_ra_rrtmg_lw.o \
+                      ../frame/module_statistics.o
 
 module_ra_rrtmg_lw.o: ../share/module_model_constants.o \
-		 module_ra_clWRF_support.o 
+		 module_ra_clWRF_support.o  \
+                      ../frame/module_statistics.o
 
 module_physics_addtendc.o: \
 		module_cu_kf.o			\
@@ -484,6 +511,7 @@ module_physics_init.o : \
 		module_ra_gfdleta.o		\
 		module_ra_HWRF.o		\
 		module_ra_hs.o			\
+                module_ra_dyclw.o               \
                 module_ra_flg.o                 \
 		module_sf_sfclay.o		\
 		module_sf_sfclayrev.o		\
@@ -541,8 +569,10 @@ module_physics_init.o : \
 		module_fdda_spnudging.o         \
 		module_fddaobs_rtfdda.o		\
 		module_mp_thompson.o            \
+                module_mp_feingold2m.o          \
 		module_mp_gsfcgce.o 		\
                 module_mp_morr_two_moment.o     \
+                module_mp_morr_full_two_moment.o \
                 module_mp_milbrandt2mom.o     \
                 module_mp_nssl_2mom.o         \
 		module_mp_wdm5.o		\
@@ -569,8 +599,10 @@ module_microphysics_driver.o: \
 		module_mp_wsm6.o module_mp_etanew.o \
 		module_mp_etaold.o module_mp_HWRF.o  \
 		module_mp_thompson.o            \
+                module_mp_feingold2m.o          \
 		module_mp_gsfcgce.o 		\
                 module_mp_morr_two_moment.o     \
+                module_mp_morr_full_two_moment.o \
                 module_mp_milbrandt2mom.o     \
                 module_mp_nssl_2mom.o         \
 		module_mp_wdm5.o module_mp_wdm6.o \
@@ -580,6 +612,13 @@ module_microphysics_driver.o: \
 		../frame/module_wrf_error.o \
 		../frame/module_configure.o \
 		../share/module_model_constants.o 
+
+module_mp_feingold2m.o: ../frame/module_wrfles.o \
+                        ../frame/module_statistics.o
+
+module_mp_morr_two_moment.o: ../frame/module_statistics.o
+
+module_mp_morr_full_two_moment.o: ../frame/module_statistics.o
 
 module_shallowcu_driver.o: \
 		module_shcu_camuwshcu_driver.o \
@@ -642,6 +681,7 @@ module_radiation_driver.o: \
 		module_ra_gfdleta.o \
 		module_ra_HWRF.o \
 		module_ra_hs.o \
+                module_ra_dyclw.o \
 		module_ra_goddard.o \
                 module_ra_flg.o \
                 module_ra_aerosol.o \
@@ -653,7 +693,8 @@ module_radiation_driver.o: \
 		../frame/module_wrf_error.o \
 		../frame/module_configure.o \
 		../share/module_bc.o  \
-		../share/module_model_constants.o 
+		../share/module_model_constants.o \
+                ../frame/module_wrfles.o
 
 module_surface_driver.o: \
 		module_sf_sfclay.o		\
@@ -686,7 +727,8 @@ module_surface_driver.o: \
 		../frame/module_state_description.o \
 		../frame/module_configure.o \
 		../frame/module_cpl.o \
-		../share/module_model_constants.o  
+		../share/module_model_constants.o  \
+                ../frame/module_wrfles.o
 
 module_sf_ocean_driver.o : \
 		module_sf_oml.o \
@@ -1195,6 +1237,9 @@ module_wrf_top.o: ../frame/module_machine.o \
                   ../frame/module_wrf_error.o \
                   ../frame/module_state_description.o \
                   ../frame/module_cpl.o \
+                  ../frame/module_statistics.o \
+                  ../frame/module_wrfles.o \
+                  ../frame/module_lagrangian_parcel_tracker.o \
                   $(ESMF_MOD_DEPENDENCE)
 
 # End of DEPENDENCIES for main

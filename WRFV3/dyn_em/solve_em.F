@@ -73,7 +73,17 @@ SUBROUTINE solve_em ( grid , config_flags  &
    USE module_after_all_rk_steps
    USE module_llxy, ONLY : proj_cassini
    USE module_avgflx_em, ONLY : zero_avgflx, upd_avgflx
+
    USE module_cpl, ONLY : coupler_on, cpl_settime, cpl_store_input
+#ifdef WRFLES
+! 2012/03 Tak Yamaguchi
+	USE module_wrfles
+#endif
+#ifdef WRFSTAT
+! 2012/03 TAK Yamaguchi
+	USE module_statistics, ONLY: docollect_data, docollect_data_rk, wadv_eta, mwle_eta, ewle_eta, &
+	                             swle_eta, flux_eta
+#endif /*WRFSTAT*/
 
    IMPLICIT NONE
 
@@ -505,6 +515,15 @@ SUBROUTINE solve_em ( grid , config_flags  &
 
      END IF
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Set flag for module_statistics.F
+	docollect_data_rk = .FALSE.
+	IF ( docollect_data .AND. rk_step == config_flags%rk_ord ) THEN
+		docollect_data_rk = .TRUE.
+	!	PRINT*,'docollect_data_rk:', docollect_data_rk, rk_step, config_flags%rk_ord
+	ENDIF
+#endif /*WRFSTAT*/
+
 !  Ensure that polar meridional velocity is zero
      IF (config_flags%polar) THEN 
        !$OMP PARALLEL DO   &
@@ -553,6 +572,20 @@ BENCH_START(step_prep_tim)
                             grid%i_start(ij), grid%i_end(ij), &
                             grid%j_start(ij), grid%j_end(ij), &
                             k_start, k_end                   )
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+!!!!!!!!!! Assuming map scale facors are 1 such as em_les cases !!!!!!!!!!
+	IF ( docollect_data_rk ) THEN
+		DO j = grid%j_start(ij), MIN(grid%j_end(ij),jde-1)
+			DO k = k_start, MIN(k_end,kde-1)
+				DO i = grid%i_start(ij), MIN(grid%i_end(ij)-1,ide-1)
+					wadv_eta(i,k,j) = grid%ww(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
 
      END DO
      !$OMP END PARALLEL DO
@@ -2070,6 +2103,20 @@ BENCH_START(rk_scalar_tend_tim)
 
 BENCH_END(rk_scalar_tend_tim)
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+!!!!!!!!!! Assuming map scale facors are 1 such as em_les cases !!!!!!!!!!
+	IF ( docollect_data_rk ) THEN
+		DO j = grid%j_start(ij), MIN(grid%j_end(ij),jde-1)
+			DO k = k_start, MIN(k_end,kde-1)
+				DO i = grid%i_start(ij), MIN(grid%i_end(ij)-1,ide-1)
+					mwle_eta(i,k,j,im) = flux_eta(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
 BENCH_START(rlx_bdy_scalar_tim)
                IF( ( config_flags%specified .or. config_flags%nested ) .and. rk_step == 1 ) THEN 
                  IF ( im .EQ. P_QV .OR. config_flags%nested .OR. &
@@ -2199,6 +2246,19 @@ BENCH_START(tke_adv_tim)
                             grid%i_start(ij), grid%i_end(ij), &
                             grid%j_start(ij), grid%j_end(ij), &
                             k_start    , k_end               )
+
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+	IF ( docollect_data_rk ) THEN
+		DO j = grid%j_start(ij), MIN(grid%j_end(ij),jde-1)
+			DO k = k_start, MIN(k_end,kde-1)
+				DO i = grid%i_start(ij), MIN(grid%i_end(ij),ide-1)
+					ewle_eta(i,k,j) = flux_eta(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
 
          ENDDO tke_tile_loop_1
          !$OMP END PARALLEL DO
@@ -2548,6 +2608,20 @@ BENCH_END(tracer_adv_tim)
                                  grid%j_start(ij), grid%j_end(ij), &
                                  k_start    , k_end               )
 
+#ifdef WRFSTAT
+	! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+!!!!!!!!!! Assuming map scale facors are 1 such as em_les cases !!!!!!!!!!
+	IF ( docollect_data_rk ) THEN
+		DO j = grid%j_start(ij), MIN(grid%j_end(ij),jde-1)
+			DO k = k_start, MIN(k_end,kde-1)
+				DO i = grid%i_start(ij), MIN(grid%i_end(ij)-1,ide-1)
+					swle_eta(i,k,j,is) = flux_eta(i,k,j)
+				ENDDO
+			ENDDO
+		ENDDO
+	ENDIF
+#endif /*WRFSTAT*/
+
            IF( rk_step == 1 ) THEN
              IF ( config_flags%nested .OR. &
                 ( config_flags%specified .AND. config_flags%have_bcs_scalar ) .OR. &
@@ -2672,6 +2746,20 @@ BENCH_END(tracer_adv_tim)
        ENDDO scalar_variable_loop
 
      ENDIF other_scalar_advance
+
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03 WRFLES: Upper boundary treatment
+	!$OMP PARALLEL DO   &
+	!$OMP PRIVATE ( ij )
+	DO ij = 1 , grid%num_tiles
+		CALL wrfles_upperbound( grid%ph_2, grid%phb, &
+		                        grid%t_2, moist(ims,kms,jms,p_qv), &
+		                        grid%i_start(ij), MIN(grid%i_end(ij),ide-1), &
+		                        grid%j_start(ij), MIN(grid%j_end(ij),jde-1), &
+		                        k_start, MIN(k_end,kde-1) )
+	ENDDO
+	!$OMP END PARALLEL DO
+#endif /*WRFLES*/
 
  !  update the pressure and density at the new time level
 
@@ -3395,6 +3483,10 @@ BENCH_START(micro_driver_tim)
 !======================
                  ! Optional
       &        , RAINNC=grid%rainnc, RAINNCV=grid%rainncv                 &
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+      &        , opdt=grid%opdt, rainrtk=grid%rainrtk                     &
+#endif /*ESRL*/
       &        , SNOWNC=grid%snownc, SNOWNCV=grid%snowncv                 &
       &        , GRAUPELNC=grid%graupelnc, GRAUPELNCV=grid%graupelncv     & ! for milbrandt2mom
       &        , HAILNC=grid%hailnc, HAILNCV=grid%hailncv                 &

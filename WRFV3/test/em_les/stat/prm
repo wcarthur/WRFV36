@@ -1,0 +1,20 @@
+ &STAT
+ 
+ stat_file_name ='wrf.stat'
+ nstat = 100
+ nstatfrq = 10
+ LES = .TRUE.
+ doavgprecflux = .FALSE.
+ docldconditionals = .TRUE.
+ docoreconditionals = .TRUE.
+ dosatupdnconditionals = .TRUE.
+ doupdnconditionals = .TRUE.
+ hrlayers = 10
+ qc_threshold = 0.01
+ qi_threshold = 0.
+ qr_threshold = 0.001
+ qs_threshold = 0.
+ qg_threshold = 0.
+ dousednc = .FALSE.
+
+/ 

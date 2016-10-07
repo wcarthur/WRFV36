@@ -340,6 +340,12 @@ CONTAINS
    USE module_sf_tmnupdate
    USE module_sf_lake
    USE module_cpl, ONLY : coupler_on, cpl_rcv
+
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03
+        USE module_wrfles, ONLY: wrfles_sfcforcing, dospecifysst, docompsfcust, docompsfcflx, &
+                                 wrfles_sfcforcing_special, dosfcspecial
+#endif
 !
 !  This driver calls subroutines for the surface parameterizations.
 !
@@ -1244,10 +1250,20 @@ CONTAINS
    LOGICAL :: do_adapt
 !
 !
+#ifdef WRFLES
+        ! Tak Yamaguchi 2012/03
+        REAL :: ustsfc, shfsfc, lhfsfc, sstsfc
+#endif /*WRFLES*/
 !------------------------------------------------------------------
 ! Initialize local variables
   q_ref2m = 0.0
 !------------------------------------------------------------------
+
+#ifdef WRFLES
+        CALL wrf_debug( 100, 'CALL wrfles_sfcforcing' )
+        CALL wrfles_sfcforcing( dt, itimestep, ustsfc, shfsfc, lhfsfc, sstsfc )
+        !!PRINT*, ustsfc, shfsfc, lhfsfc, sstsfc
+#endif /*WRFLES*/
 !
 ! stop run if using ssib and fractional seaice=0  (fds 12/2010)
 
@@ -1770,6 +1786,30 @@ CONTAINS
                  ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,                &
                  sf_surface_physics  )
          ELSE
+#ifdef WRFLES
+                        ! Tak Yamaguchi 2012/03
+                        ! Set SST here.
+                        IF (dospecifysst) THEN
+                                DO j = j_start(ij),j_end(ij)
+                                        DO i = i_start(ij),i_end(ij)
+                                                sst(i,j) = sstsfc
+                                                tsk(i,j) = sstsfc
+                                        ENDDO
+                                ENDDO
+                        ENDIF
+                        
+                        IF (dosfcspecial) THEN
+                                CALL wrfles_sfcforcing_special( &
+                                        ! IN
+                                        u_phytmp, v_phytmp, th_phy, qv_curr, z, rho, pi_phy, &
+                                        tsk, psfc, cp, xlv, &
+                                        ! INOUT
+                                        ust, ustm, hfx, qfx, lh, &
+                                        ! INDICES
+                                        i_start(ij), i_end(ij), j_start(ij), j_end(ij), kts, kte )
+                        ELSE
+                                IF (docompsfcflx.OR.docompsfcust) THEN
+#endif /*WRFLES*/
          CALL SFCLAY(u_phytmp,v_phytmp,t_phy,qv_curr,              &
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1782,6 +1822,30 @@ CONTAINS
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,    &
                ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,scm_force_flux  )
+
+#ifdef WRFLES
+                                ! Tak Yamaguchi 2012/03
+                                ENDIF
+                                ! Set ust, hfx, qfx, lh here.
+                                IF (.NOT.docompsfcust) THEN
+                                        DO j = j_start(ij),j_end(ij)
+                                                DO i = i_start(ij),i_end(ij)
+                                                        ust(i,j) = ustsfc
+                                                        ustm(i,j) = ustsfc
+                                                ENDDO
+                                        ENDDO
+                                ENDIF
+                                IF (.NOT.docompsfcflx) THEN
+                                        DO j = j_start(ij),j_end(ij)
+                                                DO i = i_start(ij),i_end(ij)
+                                                        hfx(i,j) = shfsfc   ! W/m2
+                                                        qfx(i,j) = lhfsfc / xlv   ! kg/kg m/s kg/m3
+                                                        lh(i,j) = lhfsfc   ! W/m2
+                                                ENDDO
+                                        ENDDO
+                                ENDIF
+                        ENDIF   ! dosfcspecial
+#endif /*WRFLES*/
 #if ( EM_CORE==1)
            DO j = j_start(ij),j_end(ij)
            DO i = i_start(ij),i_end(ij)
@@ -1822,6 +1886,31 @@ CONTAINS
                  ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,                &
                  sf_surface_physics  )
          ELSE
+
+#ifdef WRFLES
+                        ! Tak Yamaguchi 2012/03
+                        ! Set SST here.
+                        IF (dospecifysst) THEN
+                                DO j = j_start(ij),j_end(ij)
+                                        DO i = i_start(ij),i_end(ij)
+                                                sst(i,j) = sstsfc
+                                                tsk(i,j) = sstsfc
+                                        ENDDO
+                                ENDDO
+                        ENDIF
+                        
+                        IF (dosfcspecial) THEN
+                                CALL wrfles_sfcforcing_special( &
+                                        ! IN
+                                        u_phytmp, v_phytmp, th_phy, qv_curr, z, rho, pi_phy, &
+                                        tsk, psfc, cp, xlv, &
+                                        ! INOUT
+                                        ust, ustm, hfx, qfx, lh, &
+                                        ! INDICES
+                                        i_start(ij), i_end(ij), j_start(ij), j_end(ij), kts, kte )
+                        ELSE
+                                IF (docompsfcflx.OR.docompsfcust) THEN
+#endif /*WRFLES*/
          CALL SFCLAYREV(u_phytmp,v_phytmp,t_phy,qv_curr,&
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1834,6 +1923,30 @@ CONTAINS
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,    &
                ustm,ck,cka,cd,cda,isftcflx,iz0tlnd                 )
+
+#ifdef WRFLES
+                                ! Tak Yamaguchi 2012/03
+                                ENDIF
+                                ! Set ust, hfx, qfx, lh here.
+                                IF (.NOT.docompsfcust) THEN
+                                        DO j = j_start(ij),j_end(ij)
+                                                DO i = i_start(ij),i_end(ij)
+                                                        ust(i,j) = ustsfc
+                                                        ustm(i,j) = ustsfc
+                                                ENDDO
+                                        ENDDO
+                                ENDIF
+                                IF (.NOT.docompsfcflx) THEN
+                                        DO j = j_start(ij),j_end(ij)
+                                                DO i = i_start(ij),i_end(ij)
+                                                        hfx(i,j) = shfsfc   ! W/m2
+                                                        qfx(i,j) = lhfsfc / xlv   ! kg/kg m/s kg/m3
+                                                        lh(i,j) = lhfsfc   ! W/m2
+                                                ENDDO
+                                        ENDDO
+                                ENDIF
+                        ENDIF   ! dosfcspecial
+#endif /*WRFLES*/
 #if ( EM_CORE==1)
            DO j = j_start(ij),j_end(ij)
            DO i = i_start(ij),i_end(ij)
@@ -2212,6 +2325,11 @@ CONTAINS
 
      END SELECT sfclay_select
 
+#ifdef WRFLES
+        ! Tak Yamaguchi 2012/03 - Skip compute uratx, etc.
+        IF (docompsfcflx.OR.docompsfcust) THEN
+#endif /*WRFLES*/
+
 !  Compute uratx, vratx, tratx for obs nudging
      IF(PRESENT(uratx) .and. PRESENT(vratx) .and. PRESENT(tratx))THEN
         DO J=j_start(ij),j_end(ij)
@@ -2232,6 +2350,11 @@ CONTAINS
         ENDDO
         ENDDO
      ENDIF
+
+#ifdef WRFLES
+        ! Tak Yamaguchi 2012/03 - Skip compute uratx, etc.
+        ENDIF
+#endif /*WRFLES*/
 
 #if ( EM_CORE==1)
 !Katata-added - fog (cloud) water deposition calculation

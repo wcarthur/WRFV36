@@ -9813,6 +9813,12 @@ CONTAINS
                        xcoszen,julian                             & ! jararias 2013/08
                                                                   )
 !------------------------------------------------------------------
+
+#ifdef WRFSTAT
+        ! Tak Yamaguchi 2012/03
+        USE module_statistics, ONLY: docollect_data, radswup_eta, radswdn_eta
+#endif /*WRFSTAT*/
+
    IMPLICIT NONE
 !------------------------------------------------------------------
    LOGICAL, INTENT(IN )      ::        warm_rain
@@ -10966,7 +10972,7 @@ CONTAINS
             rthratensw(i,k,j) = tten1d(k)/pi3d(i,k,j)
          enddo
       else
-         if (present(swupt)) then 
+         if (present(swupt)) then ! if dorrsw, i.e., sun above horizon (comment by Tak Yamaguchi 2012/02)
 ! Output up and down toa fluxes for total and clear sky
             swupt(i,j)     = 0.
             swuptc(i,j)    = 0.
@@ -10981,13 +10987,30 @@ CONTAINS
             swvisdif(i,j)  = 0.
             swnirdir(i,j)  = 0.
             swnirdif(i,j)  = 0.  ! Add by Zhenxin (2011/06/20)
-         endif
+         endif ! if dorrsw, i.e., sun above horizon (comment by Tak Yamaguchi 2012/02)
             swddir(i,j)    = 0.  ! jararias 2013/08/10
             swddni(i,j)    = 0.  ! jararias 2013/08/10
             swddif(i,j)    = 0.  ! jararias 2013/08/10
 
       endif
 !
+#ifdef WRFSTAT
+        ! Tak Yamaguchi 2012/03 - Collect data for module_statistics.F
+        !       IF ( docollect_data ) THEN   ! This subroutine is called every radt. Store every call.
+                IF ( dorrsw ) THEN
+                        DO k = kts, kte
+                                radswup_eta(i,k,j) = swuflx(1,k)   ! W/m2
+                                radswdn_eta(i,k,j) = swdflx(1,k)   ! W/m2
+                        ENDDO
+                ELSE
+                        DO k = kts, kte
+                                radswup_eta(i,k,j) = 0.   ! W/m2
+                                radswdn_eta(i,k,j) = 0.   ! W/m2
+                        ENDDO
+                ENDIF
+        !ENDIF
+#endif /*WRFSTAT*/
+
       end do i_loop
    end do j_loop                                           
 

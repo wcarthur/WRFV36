@@ -37,8 +37,13 @@ SUBROUTINE microphysics_driver(                                          &
                       ,qme3d,prain3d,nevapr3d,rate1ord_cw2pr_st3d        &
                       ,dgnum4D,dgnumwet4D                                &
 #endif
-!======================                                   
+!======================
                       ,qv_curr,qc_curr,qr_curr,qi_curr,qs_curr,qg_curr   &
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+                      ,ssr_curr, f_ssr                                   &  ! for feingold2m
+                      ,eta0_curr, f_eta0                                 &  ! for feingold2m
+#endif /*ESRL*/
                       ,qic_curr,qip_curr,qid_curr &
                       ,qnic_curr,qnip_curr,qnid_curr &
                       ,qndrop_curr,qni_curr,qh_curr,qnh_curr             &
@@ -48,7 +53,7 @@ SUBROUTINE microphysics_driver(                                          &
                       ,f_qnwfa,f_qnifa                                   & ! for water/ice-friendly aerosols
                       ,qvolg_curr                                        &
                       ,effr_curr,ice_effr_curr,tot_effr_curr             &
-                       ,qic_effr_curr,qip_effr_curr,qid_effr_curr        &             
+                       ,qic_effr_curr,qip_effr_curr,qid_effr_curr        &
                       ,f_qv,f_qc,f_qr,f_qi,f_qs,f_qg,f_qndrop,f_qni      &
                       ,f_qns,f_qnr,f_qng,f_qnc,f_qnn,f_qh,f_qnh          &
                       ,            f_qzr,f_qzi,f_qzs,f_qzg,f_qzh         &
@@ -56,14 +61,18 @@ SUBROUTINE microphysics_driver(                                          &
                       ,f_qic,f_qip,f_qid &
                       ,f_qnic,f_qnip,f_qnid &
                       ,f_effr,f_ice_effr,f_tot_effr                      &
-                      ,f_qic_effr,f_qip_effr,f_qid_effr                  &                 
+                      ,f_qic_effr,f_qip_effr,f_qid_effr                  &
                       ,qrcuten, qscuten, qicuten, mu                     &
                       ,qt_curr,f_qt                                      &
                       ,mp_restart_state,tbpvs_state,tbpvs0_state         & ! for etampnew or etampold
                       ,hail,ice2                                         & ! for mp_gsfcgce
 !                     ,ccntype                                           & ! for mp_milbrandt2mom
-                      ,u,v,w,z                                          &   
+                      ,u,v,w,z                                          &
                       ,rainnc,    rainncv                                &
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+                      ,opdt,      rainrtk                                &
+#endif /*ESRL*/
                       ,snownc,    snowncv                                &
                       ,hailnc,    hailncv                                &
                       ,graupelnc, graupelncv                             &
@@ -97,11 +106,19 @@ SUBROUTINE microphysics_driver(                                          &
                      KESSLERSCHEME, LINSCHEME, SBU_YLINSCHEME, WSM3SCHEME, WSM5SCHEME    &
                     ,WSM6SCHEME, ETAMPNEW, ETAMPOLD, etamp_HWRF,THOMPSON, THOMPSONAERO, MORR_TWO_MOMENT     &
                     ,GSFCGCESCHEME, WDM5SCHEME, WDM6SCHEME &
-                    ,MILBRANDT2MOM !,MILBRANDT3MOM 
+                    ,MILBRANDT2MOM !,MILBRANDT3MOM
 #else
    USE module_state_description, ONLY :                                  &
                      KESSLERSCHEME, LINSCHEME, SBU_YLINSCHEME, WSM3SCHEME, WSM5SCHEME    &
                     ,WSM6SCHEME, ETAMPNEW, ETAMPOLD, THOMPSON, THOMPSONAERO, FAST_KHAIN_LYNN, MORR_TWO_MOMENT     &
+#ifdef MORRF2M
+! Tak Yamaguchi 2012/04 module_mp_morr_full_two_moment.F
+                    ,MORR_FULL_TWO_MOMENT &
+#endif /*MORRF2M*/
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+                    ,FEINGOLD2M &
+#endif /*ESRL*/
                     ,GSFCGCESCHEME, WDM5SCHEME, WDM6SCHEME, NSSL_2MOM, NSSL_2MOMCCN  &
                     ,NSSL_1MOM,NSSL_1MOMLFO & ! ,NSSL_3MOM       &
                     ,MILBRANDT2MOM , CAMMGMPSCHEME,FULL_KHAIN_LYNN  !,MILBRANDT3MOM
@@ -111,9 +128,9 @@ SUBROUTINE microphysics_driver(                                          &
    USE module_model_constants
    USE module_wrf_error
    USE module_configure, only: grid_config_rec_type
-#ifdef WRF_CHEM   
+#ifdef WRF_CHEM
 !mchen   USE module_state_description, only: num_scalar               ! For CAMMGMP scheme Prognostic aerosols
-   USE module_state_description, only: num_chem               ! mchen 
+   USE module_state_description, only: num_chem               ! mchen
    USE modal_aero_data, only:  ntot_amode_cam_mam => ntot_amode ! For CAMMGMP scheme Prognostic aerosols
 #endif
 
@@ -135,6 +152,14 @@ SUBROUTINE microphysics_driver(                                          &
    USE module_mp_wdm5
    USE module_mp_wdm6
    USE module_mp_milbrandt2mom
+#ifdef MORRF2M
+! Tak Yamaguchi 2012/04
+   USE module_mp_morr_full_two_moment
+#endif /*MORRF2M*/
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+   USE module_mp_feingold2m
+#endif /*ESRL*/
 # if (EM_CORE == 1)
    USE module_mp_cammgmp_driver, ONLY: CAMMGMP ! CAM5's microphysics driver
 # endif
@@ -341,17 +366,17 @@ SUBROUTINE microphysics_driver(                                          &
 
 !=================
 !Data for CAMMGMP scheme
-   REAL,INTENT(IN), OPTIONAL ::accum_mode,aitken_mode,coarse_mode  
+   REAL,INTENT(IN), OPTIONAL ::accum_mode,aitken_mode,coarse_mode
 !1D variables required for CAMMGMP scheme
    REAL , DIMENSION( kms:kme ) ,                                      &
         INTENT(IN   ) , OPTIONAL ::                                        fnm,  & !Factors for interpolation at "w" grid (interfaces)
-                                                                fnp     
+                                                                fnp
 !2D variables required for CAMMGMP scheme
    REAL, DIMENSION( ims:ime, jms:jme ),                               &
         INTENT(IN), OPTIONAL ::                                                 &
                                                                  qfx, &    !Moisture flux at surface (kg m-2 s-1)
                                                                  rliq      !Vertically-integrated reserved cloud condensate(m/s)
- 
+
  !3D variables required for CAMMGMP scheme
  REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
       INTENT(IN), OPTIONAL ::                                                   &
@@ -360,7 +385,7 @@ SUBROUTINE microphysics_driver(                                          &
                                                                t_phy, &    !Temprature at the mid points (K)
                                                                p_hyd, &    !Hydrostatic pressure(Pa)
                                                              p8w_hyd, &    !Hydrostatic Pressure at level interface (Pa)
-                                                              z_at_w, &    !Height above sea level at layer interfaces (m) 
+                                                              z_at_w, &    !Height above sea level at layer interfaces (m)
                                                              tke_pbl, &    !Turbulence kinetic energy
                                                           turbtype3d, &    !Turbulent interface types [ no unit ]
                                                               smaw3d, &    !Normalized Galperin instability function for momentum  ( 0<= <=4.964 and 1 at neutral ) [no units]
@@ -375,7 +400,7 @@ SUBROUTINE microphysics_driver(                                          &
  REAL, OPTIONAL, DIMENSION( ims:ime, kms:kme, jms:jme,ntot_amode_cam_mam ),     &
         INTENT(IN) ::                                                 &
                                                              dgnum4D, &
-                                                          dgnumwet4D 
+                                                          dgnumwet4D
 #endif
 !In-outs
  REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
@@ -387,19 +412,19 @@ SUBROUTINE microphysics_driver(                                          &
 #ifdef WRF_CHEM
  REAL, OPTIONAL, DIMENSION( ims:ime, kms:kme, jms:jme, num_chem),     &
       INTENT(INOUT) ::                                                &
-                                                                 chem      !Chem array for CAMMGMP scheme Prognostic aerosols      
+                                                                 chem      !Chem array for CAMMGMP scheme Prognostic aerosols
 #endif
 !outs
 REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
       INTENT(INOUT) , OPTIONAL::                                                 &
-                                                            wsedl3d, &    !Sedimentation velocity of stratiform liquid cloud droplet (m/s) 
+                                                            wsedl3d, &    !Sedimentation velocity of stratiform liquid cloud droplet (m/s)
                                                           cldfra_mp, &    !Old Cloud fraction for CAMMGMP microphysics only
                                                       cldfra_mp_all, &    !Old Cloud fraction for CAMMGMP microphysics only
                                                             cldfrai, &    !Old Cloud fraction for CAMMGMP microphysics only
                                                             cldfral, &    !Old Cloud fraction for CAMMGMP microphysics only
                                                             lradius, &    !Old Cloud fraction for CAMMGMP microphysics only
-                                                            iradius, &    !Old Cloud fraction for CAMMGMP microphysics only                                                            
-                                                        cldfra_conv 
+                                                            iradius, &    !Old Cloud fraction for CAMMGMP microphysics only
+                                                        cldfra_conv
 
 #ifdef WRF_CHEM
 REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
@@ -451,6 +476,10 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,qv_curr,qc_curr,qr_curr,qi_curr,qs_curr,qg_curr &
                  ,qt_curr,qndrop_curr,qni_curr,qh_curr,qnh_curr   &
                  ,qns_curr,qnr_curr,qng_curr,qnn_curr,qnc_curr    &
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+                 ,eta0_curr,ssr_curr                              &
+#endif /*ESRL*/
                  ,qic_curr,qip_curr,qid_curr &
                  ,qnic_curr,qnip_curr,qnid_curr &
                  ,qzr_curr,qzi_curr,qzs_curr,qzg_curr,qzh_curr    &
@@ -490,6 +519,12 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          INTENT(OUT ) ::                                          &
                   nsource
 
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+   REAL, OPTIONAL, INTENT(OUT), DIMENSION( ims:ime, kms:kme, jms:jme ) :: rainrtk
+   REAL, OPTIONAL, INTENT(OUT), DIMENSION( ims:ime, jms:jme ) :: opdt
+#endif /*ESRL*/
+
 !
    REAL, DIMENSION( ims:ime , jms:jme ),                          &
          INTENT(INOUT),                                           &
@@ -513,6 +548,10 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
 
    LOGICAL, OPTIONAL :: f_qv,f_qc,f_qr,f_qi,f_qs,f_qg,f_qndrop,f_qni,f_qt    &
                        ,f_qns,f_qnr,f_qng,f_qnn,f_qnc,f_qh,f_qnh,f_qzr       &
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+                       ,f_eta0,f_ssr                                        &
+#endif /*ESRL*/
                       ,f_effr,f_ice_effr,f_tot_effr &
                        ,f_qic_effr,f_qip_effr,f_qid_effr &
                       ,f_qic,f_qip,f_qid &
@@ -658,6 +697,43 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
              ELSE
                 CALL wrf_error_fatal ( 'arguments not present for calling kessler' )
              ENDIF
+
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+! 2m scheme
+        CASE (FEINGOLD2m)
+             CALL wrf_debug ( 100 , 'microphysics_driver: calling Feingold 2m' )
+             IF ( PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR )  .AND.   &
+                  PRESENT( QR_CURR ) .AND. PRESENT ( QNC_CURR )  .AND.  &
+                  PRESENT( QNR_CURR ) .AND. PRESENT ( QNN_CURR ) .AND. &
+                  PRESENT( Z ) .AND. PRESENT ( ETA0_CURR ) .AND.  &
+                  PRESENT( RAINNC  ) .AND. PRESENT ( RAINNCV ) ) THEN
+
+             CALL mp_2m_feingold(                        &
+                     QV=qv_curr,                         &
+                     QC=qc_curr,                         &
+                     QR=qr_curr,                         &
+                     nca=qnn_curr,                       &
+                     ncc=qnc_curr,                       &
+                     ncr=qnr_curr,                       &
+                     ssr=ssr_curr,                       &
+                     eta0=eta0_curr,                     &
+                     PII=pi_phy, Z=z, TH=th,             &
+                     RHO=rho,                            &
+                     P=p,                                &
+                     DZ8W=dz8w,                          &
+                     DT_IN=dt,                           &
+                     ITIMESTEP=itimestep,                &
+                     RAINNC=RAINNC,                      &
+                     RAINNCV=RAINNCV,                     &
+                     opdt=opdt, rainrtk=rainrtk                &
+                 ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
+                 ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
+                 ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte )
+             ELSE
+                CALL wrf_error_fatal ( 'arguments not present for calling feingold2m' )
+             ENDIF
+#endif /*ESRL*/
 
 !
         CASE (THOMPSONAERO)
@@ -932,6 +1008,60 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
            Call wrf_error_fatal( 'arguments not present for calling morrison two moment')
         ENDIF
 
+#ifdef MORRF2M
+! Tak Yamaguchi 2012/04 module_mp_morr_full_two_moment.F
+    CASE (MORR_FULL_TWO_MOMENT)
+         CALL wrf_debug(100, 'microphysics_driver: calling morrison full two moment')
+         IF (PRESENT (QV_CURR) .AND. PRESENT (QC_CURR) .AND. &
+             PRESENT (QR_CURR) .AND. PRESENT (QI_CURR) .AND. &
+         PRESENT (QS_CURR) .AND. PRESENT (QG_CURR) .AND. &
+         PRESENT (QR_CURR) .AND. PRESENT (QI_CURR) .AND. &
+         PRESENT (QNS_CURR) .AND. PRESENT (QNC_CURR).AND. PRESENT (QNI_CURR).AND. &
+         PRESENT (QNR_CURR) .AND. PRESENT (QNG_CURR).AND. &
+         PRESENT (MU) .AND. PRESENT (QSCUTEN).AND. &
+         PRESENT (QRCUTEN) .AND. PRESENT (QICUTEN).AND. &
+         PRESENT (RAINNC ) .AND. PRESENT (RAINNCV) .AND. &
+         PRESENT (Z      ) .AND.PRESENT ( W      )  ) THEN
+         CALL mp_morr_full_two_moment(                            &
+                     ITIMESTEP=itimestep,                &  !*
+                     TH=th,                              &  !*
+                     QV=qv_curr,                         &  !*
+                     QC=qc_curr,                         &  !*
+                     QR=qr_curr,                         &  !*
+                     QI=qi_curr,                         &  !*
+                     QS=qs_curr,                         &  !*
+                     QG=qg_curr,                         &  !*
+                     NI=qni_curr,                        &  !*
+                     NS=qns_curr,                        &  !* ! VVT
+                     NR=qnr_curr,                        &  !* ! VVT
+                     NG=qng_curr,                        &  !* ! VVT
+                     NC=qnc_curr,                        &  !*
+                     RHO=rho,                            &  !*
+                     PII=pi_phy,                         &  !*
+                     P=p,                                &  !*
+                     DT_IN=dt,                           &  !*
+                     DZ=dz8w,                            &  !* !hm
+                     HT=ht,                              &  !*
+                     W=w                                 &  !*
+                    ,RAINNC=RAINNC                       &  !*
+                    ,RAINNCV=RAINNCV                     &  !*
+                    ,SR=SR                               &  !* !hm
+                    ,qrcuten=qrcuten                     &  ! hm
+                    ,qscuten=qscuten                     &  ! hm
+                    ,qicuten=qicuten                     &  ! hm
+                    ,mu=mu                          &  ! hm
+!                    ,F_QNDROP=f_qndrop                   &  ! hm for wrf-chem
+!                 ,QNDROP=qndrop_curr                     &  ! hm for wrf-chem
+                 ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
+                 ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
+                 ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
+!                 ,QLSINK=qlsink                                     & ! jdf for wrf-chem
+!                 ,PRECR=precr,PRECI=preci,PRECS=precs,PRECG=precg   & ! jdf for wrf-chem
+                                                                    )
+        ELSE
+           Call wrf_error_fatal( 'arguments not present for calling morrison full two moment')
+        ENDIF
+#endif /*MORRF2M*/
 
     CASE (MILBRANDT2MOM)
          CALL wrf_debug(100, 'microphysics_driver: calling milbrandt2mom')
@@ -1054,7 +1184,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
              PRESENT (GRAUPELNC).AND.PRESENT (GRAUPELNCV).AND. &
              PRESENT (Z      ) .AND. PRESENT ( W      )  .AND. &
              PRESENT (QVOLG_CURR) ) THEN
-             
+
 
          CALL nssl_2mom_driver(                          &
                      ITIMESTEP=itimestep,                &
@@ -1111,7 +1241,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
              PRESENT (SNOWNC ) .AND. PRESENT (SNOWNCV)   .AND. &
              PRESENT (GRAUPELNC).AND.PRESENT (GRAUPELNCV).AND. &
              PRESENT (Z      ) .AND. PRESENT ( W      )  ) THEN
-             
+
 
          CALL nssl_2mom_driver(                          &
                      ITIMESTEP=itimestep,                &
@@ -1160,7 +1290,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
              PRESENT (GRAUPELNC).AND.PRESENT (GRAUPELNCV).AND. &
              PRESENT (Z      ) .AND. PRESENT ( W      )  .AND. &
              PRESENT (QVOLG_CURR) ) THEN
-             
+
 
          CALL nssl_2mom_driver(                          &
                      ITIMESTEP=itimestep,                &
@@ -1219,7 +1349,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
              PRESENT (GRAUPELNC).AND.PRESENT (GRAUPELNCV).AND. &
              PRESENT (Z      ) .AND. PRESENT ( W      )  .AND. &
              PRESENT (QVOLG_CURR) .AND. PRESENT( QNN_CURR )  ) THEN
-             
+
 
          CALL nssl_2mom_driver(                          &
                      ITIMESTEP=itimestep,                &
@@ -1523,7 +1653,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,REFL_10CM=refl_10cm                               &  ! added for radar reflectivity
                  ,diagflag=diagflag                                 &  ! added for radar reflectivity
                  ,do_radar_ref=do_radar_ref                         &  ! added for radar reflectivity
-                 ,ITIMESTEP=itimestep                               & 
+                 ,ITIMESTEP=itimestep                               &
                  ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
                  ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
@@ -1565,7 +1695,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,diagflag=diagflag                                 &  ! added for radar reflectivity
                  ,do_radar_ref=do_radar_ref                         &  ! added for radar reflectivity
                  ,GRAUPEL=graupelnc ,GRAUPELNCV=graupelncv          &
-                 ,ITIMESTEP=itimestep                               & 
+                 ,ITIMESTEP=itimestep                               &
                  ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
                  ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
@@ -1637,7 +1767,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   PRESENT( qs_curr    ) .AND.                              &
                   PRESENT( qv_curr    ) .AND. PRESENT( qc_curr     ) .AND. &
                   PRESENT( qi_curr    ) .AND. PRESENT( f_qc        ) .AND. &
-                  PRESENT( qr_curr    ) .AND. PRESENT( qndrop_curr ) .AND. &                  
+                  PRESENT( qr_curr    ) .AND. PRESENT( qndrop_curr ) .AND. &
                   PRESENT( f_qi       ) .AND. PRESENT( qnc_curr    ) .AND. &
                   PRESENT( RAINNCV    ) .AND. PRESENT( SNOWNCV     ) .AND. &
                   PRESENT( qns_curr   ) .AND. PRESENT( qnr_curr    ) .AND. &
@@ -1652,7 +1782,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                 qi_b4mp(its:ite,kts:kte,jts:jte) = qi_curr(its:ite,kts:kte,jts:jte)
                 qs_b4mp(its:ite,kts:kte,jts:jte) = qs_curr(its:ite,kts:kte,jts:jte)
 #endif
-                  
+
                 CALL CAMMGMP(ITIMESTEP=itimestep,DT=dt,P8W=p8w_hyd,P_HYD=p_hyd    &
                      ,T_PHY=t_phy,PI_PHY=pi_phy,Z_AT_W=z_at_w,QFX=qfx             &
                      ,TKE_PBL=tke_pbl,TURBTYPE3D=turbtype3d,SMAW3D=smaw3d     &

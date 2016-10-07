@@ -649,7 +649,6 @@ CONTAINS
    LOGICAL :: usemonalb
    LOGICAL :: rdmaxalb
    INTEGER :: mfshconv
-   INTEGER :: icloud_cu
    INTEGER :: iopt_run
 
    INTEGER :: i, j, k, itf, jtf, ktf, n
@@ -770,7 +769,10 @@ integer myproc
    IF ( .NOT. moved ) THEN
    DO j=jts,jtf
    DO i=its,itf
+#ifndef WRFLES
+! Tak Yamaguchi 2012/03 WRFLES: xland has been defined at ideal.exe
       XLAND(i,j)=1.
+#endif /*WRFLES*/
       GSW(i,j)=0.
       GLW(i,j)=0.
 !-- initialize ust to a small value
@@ -870,17 +872,16 @@ integer myproc
 
 !..Determine which cu_rad_feedback option to use 
 
-   icloud_cu = 0
+   config_flags%icloud_cu = 0
    IF ( config_flags%cu_rad_feedback ) THEN  
       IF ( config_flags%cu_physics == kfetascheme ) THEN
-         icloud_cu = 2
+         config_flags%icloud_cu = 2
       ELSE IF ( config_flags%cu_physics == gfscheme .OR. &
                 config_flags%cu_physics == g3scheme .OR. &
                 config_flags%cu_physics == gdscheme ) THEN
-         icloud_cu = 1
+         config_flags%icloud_cu = 1
       END IF
    END IF
-   CALL nl_set_icloud_cu ( id , icloud_cu )
 
 !..Fill initial starting values of radiative effective radii for
 !.. cloud water (2.51 microns), cloud ice (5.01 microns), and
@@ -3352,6 +3353,10 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
    USE module_mp_full_sbm
    USE module_mp_fast_sbm
    USE module_mp_morr_two_moment
+#ifdef MORRF2M
+! Tak Yamaguchi 2012/04 module_mp_morr_full_two_moment.F
+   USE module_mp_morr_full_two_moment
+#endif /*MORRF2M*/
    USE module_mp_milbrandt2mom
 !  USE module_mp_milbrandt3mom
    USE module_mp_wdm5
@@ -3428,6 +3433,11 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
 
      CASE (KESSLERSCHEME)
           warm_rain = .true.
+#ifdef ESRL
+! Tak Yamaguchi 2012/03 module_mp_feingold2m.F (following v3.1.1 implementation by H. Wang)
+     CASE (feingold2m)
+          warm_rain = .true.
+#endif /*ESRL*/
      CASE (WSM3SCHEME)
           CALL wsm3init(rhoair0,rhowater,rhosnow,cliq,cpv, allowed_to_read )
      CASE (WSM5SCHEME)
@@ -3475,6 +3485,11 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
 
      CASE (MORR_TWO_MOMENT)
          CALL morr_two_moment_init
+#ifdef MORRF2M
+! Tak Yamaguchi 2012/04 module_mp_morr_full_two_moment.F
+     CASE (MORR_FULL_TWO_MOMENT)
+         CALL morr_full_two_moment_init
+#endif /*MORRF2M*/
      CASE (MILBRANDT2MOM)
          CALL milbrandt2mom_init
 !      CASE (MILBRANDT3MOM)

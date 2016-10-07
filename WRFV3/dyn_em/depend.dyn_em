@@ -19,7 +19,8 @@ interp_domain_em.o: ../frame/module_domain.o \
 
 module_advect_em.o: ../share/module_bc.o \
 		../share/module_model_constants.o \
-		../frame/module_wrf_error.o
+		../frame/module_wrf_error.o \
+                ../frame/module_statistics.o
 
 module_bc_em.o: ../share/module_bc.o ../frame/module_configure.o \
 		../frame/module_wrf_error.o
@@ -38,12 +39,16 @@ module_diffusion_em.o:  module_big_step_utilities_em.o \
 		../frame/module_state_description.o \
 		../share/module_model_constants.o \
 		../share/module_bc.o \
-		../frame/module_wrf_error.o
+		../frame/module_wrf_error.o \
+                ../frame/module_statistics.o \
+                ../frame/module_wrfles.o \
+                ../frame/module_lagrangian_parcel_tracker.o
 
 module_em.o:    module_big_step_utilities_em.o module_advect_em.o \
 		module_damping_em.o \
 		../frame/module_state_description.o \
-		../share/module_model_constants.o 
+		../share/module_model_constants.o \
+                ../frame/module_statistics.o 
 
 module_polarfft.o: ../share/module_model_constants.o \
 		../frame/module_wrf_error.o
@@ -140,7 +145,8 @@ module_initialize_les.o : \
 		../share/module_io_domain.o \
 		../share/module_model_constants.o \
 		../share/module_bc.o \
-		module_init_utilities.o
+		module_init_utilities.o \
+                ../frame/module_wrfles.o
 
 module_initialize_seabreeze2d_x.o : \
 		../frame/module_domain.o \
@@ -259,7 +265,9 @@ solve_em.o:     module_small_step_em.o \
 		../share/module_bc.o \
 		../phys/module_microphysics_driver.o \
 		../phys/module_microphysics_zero_out.o \
-		../phys/module_physics_addtendc.o
+		../phys/module_physics_addtendc.o \
+                ../frame/module_wrfles.o \
+                ../frame/module_statistics.o
 
 module_convtrans_prep.o : 
 
@@ -275,7 +283,8 @@ module_first_rk_step_part1.o : \
 		../phys/module_pbl_driver.o \
 		../phys/module_fr_fire_driver_wrf.o \
 		../frame/module_comm_dm.o \
-		../phys/module_fddagd_driver.o
+		../phys/module_fddagd_driver.o \
+                ../frame/module_wrfles.o
 
 module_first_rk_step_part2.o : \
                 module_em.o \

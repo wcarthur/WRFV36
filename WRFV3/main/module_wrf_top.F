@@ -26,6 +26,20 @@ MODULE module_wrf_top
 
    USE module_cpl, ONLY : coupler_on, cpl_finalize, cpl_defdomain
 
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03
+	USE module_wrfles, ONLY: wrfles_setup_in_wrfexe
+#endif /*WRFLES*/
+#ifdef WRFSTAT
+! Tak Yamaguchi 2012/03
+	USE module_statistics, ONLY: wrf_statistics_init
+#endif /*WRFSTAT*/
+#ifdef WRFLPT
+! Tak Yamaguchi 2012/03
+	USE module_lagrangian_parcel_tracker, ONLY: wrf_lpt_prep
+#endif /*WRFLPT*/
+
+
    IMPLICIT NONE
 
    REAL    :: time
@@ -395,6 +409,19 @@ CONTAINS
 #endif
 
    IF (coupler_on) CALL cpl_defdomain( head_grid ) 
+
+#ifdef WRFLES
+! Tak Yamaguchi 2012/03
+	CALL wrfles_setup_in_wrfexe( head_grid )
+#endif /*WRFLES*/
+#ifdef WRFSTAT
+! Tak Yamaguchi 2012/03
+	CALL wrf_statistics_init( head_grid, config_flags )
+#endif /*WRFSTAT*/
+#ifdef WRFLPT
+! Tak Yamaguchi 2012/03
+	CALL wrf_lpt_prep( head_grid, config_flags )
+#endif /*WRFLPT*/
 
    END SUBROUTINE wrf_init
 

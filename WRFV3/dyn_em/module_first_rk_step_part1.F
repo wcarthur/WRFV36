@@ -55,6 +55,13 @@ use module_scalar_tables
     halo_em_chem_e_5_sub, halo_em_hydro_noahmp_sub
 #endif
     USE module_utility
+    
+#ifdef WRFLES
+! 2012/03 Tak Yamaguchi
+	USE module_wrfles, ONLY: wrfles_prepforcing, wrfles_lsforcing, wrfles_subsidence, &
+	                         wrfles_couple2mass
+#endif
+
     IMPLICIT NONE
 
     TYPE ( domain ), INTENT(INOUT) :: grid
@@ -218,6 +225,56 @@ BENCH_END(init_zero_tend_tim)
       !$OMP END PARALLEL DO
 
 BENCH_END(phy_prep_tim)
+
+#ifdef WRFLES
+! Since 2012/03 Tak Yamaguchi: Large scale forcing for WRFLES
+		CALL wrf_debug ( 100 ,'CALL wrfles_lsforcing' )
+#ifdef ESRL
+		CALL wrfles_prepforcing( &
+			! IN
+			grid%dt, grid%itimestep, num_moist, grid%phb, grid%ph_2, grid%alb, grid%al, moist, &
+			grid%u_2, grid%v_2, th_phy, scalar(ims,kms,jms,p_qnn), scalar(ims,kms,jms,p_qnc) )
+			
+		CALL wrfles_lsforcing( &
+			! IN
+			grid%dt, grid%z_base, moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
+			grid%itimestep, scalar(ims,kms,jms,p_qnn), scalar(ims,kms,jms,p_qnc), &
+			! INOUT
+			grid%u_base, grid%v_base, ru_tendf, rv_tendf, t_tendf, &
+			moist_tend(ims,kms,jms,p_qv), moist_tend(ims,kms,jms,p_qc), &
+			scalar_tend(ims,kms,jms,p_qnn), scalar_tend(ims,kms,jms,p_qnc) )
+#else
+		CALL wrfles_prepforcing( &
+			grid%dt, grid%itimestep, num_moist, grid%phb, grid%ph_2, grid%alb, grid%al, moist, &
+			grid%u_2, grid%v_2, th_phy )
+			
+		CALL wrfles_lsforcing( &
+			! IN
+			grid%dt, grid%z_base, moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
+			! INOUT
+			grid%u_base, grid%v_base, ru_tendf, rv_tendf, t_tendf, &
+			moist_tend(ims,kms,jms,p_qv), moist_tend(ims,kms,jms,p_qc) )
+#endif /*ESRL*/
+			
+		CALL wrfles_subsidence( &
+			! IN
+			num_moist, num_scalar, &
+			grid%phb, grid%ph_2, grid%u_2, grid%v_2, grid%t_2, moist, scalar, &
+			! INOUT
+			ru_tendf, rv_tendf, t_tendf, moist_tend, scalar_tend )
+			
+		DO ij = 1, grid%num_tiles
+			CALL wrfles_couple2mass( &
+				! IN
+				num_moist, num_scalar, grid%mut, grid%muu, grid%muv, &
+				! INOUT
+				ru_tendf, rv_tendf, t_tendf, moist_tend, scalar_tend, &
+				! INDICES
+				grid%i_start(ij), MIN(grid%i_end(ij),ide-1), &
+				grid%j_start(ij), MIN(grid%j_end(ij),jde-1), &
+				k_start, MIN(k_end,kde-1) )
+		ENDDO
+#endif /*WRFLES*/
 
 ! radiation
      CALL domain_clock_get( grid, current_time=currentTime, &

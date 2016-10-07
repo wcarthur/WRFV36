@@ -312,7 +312,7 @@ state    real   ht_coarse       ij     misc        1   -     r                - 
 
 
 # TKE
-state    real   tke            ikj     dyn_em      2         -       r        "tke"          "TURBULENCE KINETIC ENERGY"     "m2 s-2"
+state    real   tke            ikj     dyn_em      2         -       irh        "tke"          "TURBULENCE KINETIC ENERGY"     "m2 s-2"
 i1       real   tke_tend       ikj     dyn_em      1         -      
 
 # Pressure and Density
@@ -484,6 +484,12 @@ state  integer  has_reqs          -     misc        1         -     r        "ha
 
 # Other Scalars
 state   real    -              ikjftb  scalar      1         -     -   -
+ifdef ESRL
+state   real    eta0           ikjftb   scalar      1         -     \
+   irusdf=(bdy_interp:dt)      "ETA0"          "QV-RST(T,P)"      "kg kg-1"
+state   real    ssr             ikjftb  scalar      1         -     \
+   irusdf=(bdy_interp:dt)      "SSR"           "Supersaturation"      "%"
+endif #/*ESRL*/
 state   real    qndrop         ikjftb  scalar      1         -     \
    i0rhusdf=(bdy_interp:dt)    "QNDROP"        "Droplet number mixing ratio"        "# kg-1"
 state   real    qni            ikjftb  scalar      1         -     \
@@ -502,6 +508,12 @@ state   real    qnn            ikjftb  scalar      1         -     \
    i0rhusdf=(bdy_interp:dt)    "QNCCN"         "CCN Number concentration" "# kg(-1)"
 state   real    qnc            ikjftb  scalar      1         -     \
    i0rhusdf=(bdy_interp:dt)    "QNCLOUD"       "cloud water Number concentration" "# kg(-1)"
+ifdef ESRL
+state   real    dfi_eta0       ikjftb   dfi_scalar       1         -     \
+   rusdf=(bdy_interp:dt)    "DFI_ETA0"      "qv-qvs"      "kg kg-1"
+state   real    dfi_ssr       ikjftb  dfi_scalar      1         -     \
+   rusdf=(bdy_interp:dt)    "DFI_SSR"      "supersaturation"      "%"
+endif #/*ESRL*/
 state   real    qnwfa          ikjftb  scalar      1         -     \
    i0rhusdf=(bdy_interp:dt)    "QNWFA"         "water-friendly aerosol number con" "# kg(-1)"
 state   real    qnifa          ikjftb  scalar      1         -     \
@@ -1139,7 +1151,10 @@ state    real  RQICUTEN        ikj      misc        1         -      r        "R
 state    real  RQCNCUTEN       ikj      misc        1         -      r       "RQCNCUTEN"             "COUPLED Q_CN TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
 state    real  RQINCUTEN       ikj      misc        1         -      r       "RQINCUTEN"             "COUPLED Q_IN TENDENCY DUE TO CUMULUS SCHEME"       "Pa kg kg-1 s-1"
 state    real  W0AVG           ikj      misc        1         -      r        "W0AVG"                 "AVERAGE VERTICAL VELOCITY FOR KF CUMULUS SCHEME"         "m s-1"
-
+ifdef ESRL
+state    real  opdt             ij      misc        1         -      rh02       "OPD"                 "optical depth"
+state    real  rainrtk         ikj      misc        1         -      rh02     "RAINR"                 "rainrate at all levels for 2-m scheme"                  "mm day-1"                                               
+endif #/*ESRL*/
 state    real  RAINC            ij      misc        1         -      rhdu     "RAINC"                 "ACCUMULATED TOTAL CUMULUS PRECIPITATION"                 "mm"      
 state    real  RAINSH           ij      misc        1         -      rhdu     "RAINSH"                "ACCUMULATED SHALLOW CUMULUS PRECIPITATION"               "mm"
 state    real  RAINNC           ij      misc        1         -      rhdu     "RAINNC"                "ACCUMULATED TOTAL GRID SCALE PRECIPITATION"              "mm"      
@@ -2369,7 +2384,7 @@ rconfig   integer  FLAG_SOILHGT           derived                      1        
 rconfig   integer  FLAG_MF_XY             derived                      1          0       -        "FLAG_MF_XY"            "Flag for MF_XYin the global attributes for metgrid data"
 rconfig   real    bdyfrq                  derived                  max_domains    0       -        "bdyfrq"               "lateral boundary input frequency"      "seconds"
 rconfig   character mminlu                derived                  max_domains    " "     -        "mminlu"               "land use dataset"             ""
-rconfig   integer iswater                 derived                  max_domains    0       -        "iswater"              "land use index of water"      "index category"
+rconfig   integer iswater                 derived                  max_domains    1       -        "iswater"              "land use index of water"      "index category"
 rconfig   integer islake                  derived                  max_domains    0       -        "islake"               "land use index of inland lake"      "index category"
 rconfig   integer isice                   derived                  max_domains    0       -        "isice"                "land use index of ice"        "index category"
 rconfig   integer isurban                 derived                  max_domains    0       -        "isurban"              "land use index for 'urban and built-up"     "index category"
@@ -2408,6 +2423,9 @@ package   thompson      mp_physics==8                -             moist:qv,qc,q
 package   thompsonaero  mp_physics==28               -             moist:qv,qc,qr,qi,qs,qg;scalar:qni,qnr,qnc,qnwfa,qnifa;state:re_cloud,re_ice,re_snow
 package   milbrandt2mom mp_physics==9                -             moist:qv,qc,qr,qi,qs,qg,qh;scalar:qnc,qnr,qni,qns,qng,qnh
 package   morr_two_moment  mp_physics==10            -             moist:qv,qc,qr,qi,qs,qg;scalar:qni,qns,qnr,qng
+ifdef MORRF2M
+package   morr_full_two_moment  mp_physics==30       -             moist:qv,qc,qr,qi,qs,qg;scalar:qnc,qni,qns,qnr,qng
+endif #/*MORRF2M*/
 package   cammgmpscheme mp_physics==11               -             moist:qv,qc,qi,qr,qs;scalar:qnc,qni,qnr,qns;state:rh_old_mp,lcd_old_mp,cldfra_old_mp,cldfra_mp,cldfra_mp_all,cldfra_conv,cldfrai,cldfral,turbtype3d,smaw3d,wsedl3d,icwmrdp3d,dp3d,shfrc3d,dlf,dlf2,tke_pbl,lradius,iradius
 #package   milbrandt3mom mp_physics==12               -             moist:qv,qc,qr,qi,qs,qg,qh;scalar:qnc,qnr,qni,qns,qng,qnh,qzr,qzi,qzs,qzg,qzh
 package   sbu_ylinscheme    mp_physics==13           -             moist:qv,qc,qr,qi,qs;state:rimi
@@ -2418,6 +2436,9 @@ package   nssl_2momccn  mp_physics==18                -            moist:qv,qc,q
 package   nssl_1mom     mp_physics==19               -             moist:qv,qc,qr,qi,qs,qg,qh;scalar:qvolg
 package   nssl_1momlfo  mp_physics==21               -             moist:qv,qc,qr,qi,qs,qg
 package   etampold      mp_physics==95               -             moist:qv,qc,qr,qs;scalar:qt;state:f_ice_phy,f_rain_phy,f_rimef_phy
+ifdef ESRL
+package   feingold2m     mp_physics==31              -             moist:qv,qc,qr;scalar:eta0,ssr,qnn,qnc,qnr
+endif #/*ESRL*/
 endif
 
 package   nodfimoist        mp_physics_dfi==-1       -             -
@@ -2433,6 +2454,9 @@ package   thompson_dfi      mp_physics_dfi==8        -             dfi_moist:dfi
 package   thompsonaero_dfi  mp_physics_dfi==28       -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs,dfi_qg;dfi_scalar:dfi_qni,dfi_qnr,dfi_qnc,dfi_qnwfa,dfi_qnifa;state:dfi_re_cloud,dfi_re_ice,dfi_re_snow
 package   milbrandt2mom_dfi mp_physics_dfi==9        -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs,dfi_qg,dfi_qh;dfi_scalar:dfi_qnc,dfi_qnr,dfi_qni,dfi_qns,dfi_qng,dfi_qnh
 package   morr_two_moment_dfi  mp_physics_dfi==10    -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs,dfi_qg;dfi_scalar:dfi_qni,dfi_qns,dfi_qnr,dfi_qng
+ifdef MORRF2M
+package   morr_full_two_moment_dfi  mp_physics_dfi==30    -        dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs,dfi_qg;dfi_scalar:dfi_qnc,dfi_qni,dfi_qns,dfi_qnr,dfi_qng
+endif #/*MORRF2M*/
 #package   milbrandt3mom_dfi mp_physics_dfi==12       -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs,dfi_qg,dfi_qh;dfi_scalar:dfi_qnc,dfi_qnr,dfi_qni,dfi_qns,dfi_qng,dfi_qnh,dfi_qzr,dfi_qzi,dfi_qzs,dfi_qzg,dfi_qzh
 #package   sbu_ylinscheme_dfi    mp_physics==13           -         dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs;state:rimi
 package   wdm5scheme_dfi    mp_physics_dfi==14       -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs;dfi_scalar:dfi_qnn,dfi_qnc,dfi_qnr
@@ -2442,6 +2466,9 @@ package   nssl_2mom_dficcn  mp_physics_dfi==18       -             dfi_moist:dfi
 package   nssl_1mom_dfi     mp_physics_dfi==19       -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs,dfi_qg,dfi_qh;dfi_scalar:dfi_qvolg
 package   nssl_1momlfo_dfi  mp_physics_dfi==21       -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qi,dfi_qs,dfi_qg
 package   etampold_dfi      mp_physics_dfi==95       -             dfi_moist:dfi_qv,dfi_qc,dfi_qr,dfi_qs;dfi_scalar:dfi_qt
+ifdef ESRL
+package   feingold2m_dfi     mp_physics_dfi==31      -             dfi_moist:dfi_qv,dfi_qc,dfi_qr;dfi_scalar:dfi_eta0,dfi_ssr,dfi_qnn,dfi_qnc,dfi_qnr
+endif #/*ESRL*/
 
 package   noprogn       progn==0                     -             -
 package   progndrop     progn==1                     -             scalar:qndrop;dfi_scalar:dfi_qndrop
@@ -2453,6 +2480,9 @@ package   goddardlwscheme  ra_lw_physics==5          -             state:tlwdn,t
 package   flglwscheme   ra_lw_physics==7             -             -
 package   gfdllwscheme  ra_lw_physics==99            -             -
 package   heldsuarez    ra_lw_physics==31            -             -
+ifdef WRFLES
+package   dycsimple     ra_lw_physics==18            -             -
+endif #/*WRFLES*/
 
 package   swradscheme   ra_sw_physics==1             -             -
 package   gsfcswscheme  ra_sw_physics==2             -             -

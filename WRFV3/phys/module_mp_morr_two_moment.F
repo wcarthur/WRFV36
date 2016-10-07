@@ -25,10 +25,10 @@
 !      POTENTIAL FOR SPURIOUS ACCUMULATION OF PRECIPITATION DURING SUB-STEPPING FOR SEDIMENTATION
 ! 3) BUG FIX TO LATENT HEAT RELEASE DUE TO COLLISIONS OF CLOUD ICE WITH RAIN
 ! 4) CLEAN UP OF COMMENTS IN THE CODE
-    
+
 ! additional minor bug fixes and small changes, 5/30/2011
 ! minor revisions by A. Ackerman April 2011:
-! 1) replaced kinematic with dynamic viscosity 
+! 1) replaced kinematic with dynamic viscosity
 ! 2) replaced scaling by air density for cloud droplet sedimentation
 !    with viscosity-dependent Stokes expression
 ! 3) use Ikawa and Saito (1991) air-density scaling for cloud ice
@@ -38,7 +38,7 @@
 ! 5) TEMPERATURE FOR ACCELERATED MELTING DUE TO COLLIIONS OF SNOW AND GRAUPEL
 !    WITH RAIN SHOULD USE CELSIUS, NOT KELVIN (BUG REPORTED BY K. VAN WEVERBERG)
 ! 6) NPRACS IS NOT SUBTRACTED FROM SNOW NUMBER CONCENTRATION, SINCE
-!    DECREASE IN SNOW NUMBER IS ALREADY ACCOUNTED FOR BY NSMLTS 
+!    DECREASE IN SNOW NUMBER IS ALREADY ACCOUNTED FOR BY NSMLTS
 ! 7) fix for switch for running w/o graupel/hail (cloud ice and snow only)
 
 ! hm bug fix 3/16/12
@@ -48,7 +48,7 @@
 ! WRFV3.5
 ! hm/A. Ackerman bug fix 11/08/12
 
-! 1) for accelerated melting from collisions, should use rain mass collected by snow, not snow mass 
+! 1) for accelerated melting from collisions, should use rain mass collected by snow, not snow mass
 !    collected by rain
 ! 2) minor changes to some comments
 ! 3) reduction of maximum-allowed ice concentration from 10 cm-3 to 0.3
@@ -63,7 +63,7 @@
 !    Hailong Wang (PNNL)
 ! 3) very minor fix to immersion freezing rate formulation (negligible impact)
 ! 4) clarifications to code comments
-! 5) minor change to shedding of rain, remove limit so that the number of 
+! 5) minor change to shedding of rain, remove limit so that the number of
 !    collected drops can smaller than number of shed drops
 ! 6) change of specific heat of liquid water from 4218 to 4187 J/kg/K
 
@@ -105,7 +105,7 @@ MODULE MODULE_MP_MORR_TWO_MOMENT
      INTEGER, PRIVATE ::  IACT
 
 ! INUM = 0, PREDICT DROPLET CONCENTRATION
-! INUM = 1, ASSUME CONSTANT DROPLET CONCENTRATION   
+! INUM = 1, ASSUME CONSTANT DROPLET CONCENTRATION
 ! !!!NOTE: PREDICTED DROPLET CONCENTRATION NOT AVAILABLE IN THIS VERSION
 ! CONTACT HUGH MORRISON (morrison@ucar.edu) FOR FURTHER INFORMATION
 
@@ -126,16 +126,16 @@ MODULE MODULE_MP_MORR_TWO_MOMENT
 
      INTEGER, PRIVATE ::  INUC
 
-! IBASE = 1, NEGLECT DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO 
+! IBASE = 1, NEGLECT DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO
 !             UNRESOLVED ENTRAINMENT AND MIXING, ACTIVATE
-!             AT CLOUD BASE OR IN REGION WITH LITTLE CLOUD WATER USING 
-!             NON-EQULIBRIUM SUPERSATURATION, 
+!             AT CLOUD BASE OR IN REGION WITH LITTLE CLOUD WATER USING
+!             NON-EQULIBRIUM SUPERSATURATION,
 !             IN CLOUD INTERIOR ACTIVATE USING EQUILIBRIUM SUPERSATURATION
-! IBASE = 2, ASSUME DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO 
+! IBASE = 2, ASSUME DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO
 !             UNRESOLVED ENTRAINMENT AND MIXING DOMINATES,
 !             ACTIVATE DROPLETS EVERYWHERE IN THE CLOUD USING NON-EQUILIBRIUM
-!             SUPERSATURATION, BASED ON THE 
-!             LOCAL SUB-GRID AND/OR GRID-SCALE VERTICAL VELOCITY 
+!             SUPERSATURATION, BASED ON THE
+!             LOCAL SUB-GRID AND/OR GRID-SCALE VERTICAL VELOCITY
 !             AT THE GRID POINT
 
 ! NOTE: ONLY USED FOR PREDICTED DROPLET CONCENTRATION (INUM = 0)
@@ -146,7 +146,7 @@ MODULE MODULE_MP_MORR_TWO_MOMENT
 ! ISUB = 0, INCLUDE SUB-GRID W (RECOMMENDED FOR LOWER RESOLUTION)
 ! ISUB = 1, EXCLUDE SUB-GRID W, ONLY USE GRID-SCALE W
 
-     INTEGER, PRIVATE ::  ISUB      
+     INTEGER, PRIVATE ::  ISUB
 
 ! SWITCH FOR GRAUPEL/NO GRAUPEL
 ! IGRAUP = 0, INCLUDE GRAUPEL
@@ -217,7 +217,7 @@ MODULE MODULE_MP_MORR_TWO_MOMENT
      REAL, PRIVATE ::      F11     ! CORRECTION FACTOR FOR ACTIVATION, MODE 1
      REAL, PRIVATE ::      F12     ! CORRECTION FACTOR FOR ACTIVATION, MODE 1
      REAL, PRIVATE ::      F21     ! CORRECTION FACTOR FOR ACTIVATION, MODE 2
-     REAL, PRIVATE ::      F22     ! CORRECTION FACTOR FOR ACTIVATION, MODE 2     
+     REAL, PRIVATE ::      F22     ! CORRECTION FACTOR FOR ACTIVATION, MODE 2
      REAL, PRIVATE ::      MMULT   ! MASS OF SPLINTERED ICE PARTICLE
      REAL, PRIVATE ::      LAMMAXI,LAMMINI,LAMMAXR,LAMMINR,LAMMAXS,LAMMINS,LAMMAXG,LAMMING
 
@@ -235,7 +235,7 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE MORR_TWO_MOMENT_INIT
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! THIS SUBROUTINE INITIALIZES ALL PHYSICAL CONSTANTS AMND PARAMETERS 
+! THIS SUBROUTINE INITIALIZES ALL PHYSICAL CONSTANTS AMND PARAMETERS
 ! NEEDED BY THE MICROPHYSICS SCHEME.
 ! NEEDS TO BE CALLED AT FIRST TIME STEP, PRIOR TO CALL TO MAIN MICROPHYSICS INTERFACE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -263,9 +263,9 @@ SUBROUTINE MORR_TWO_MOMENT_INIT
       NDCNST = 250.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! NOTE, THE FOLLOWING OPTIONS RELATED TO DROPLET ACTIVATION 
+! NOTE, THE FOLLOWING OPTIONS RELATED TO DROPLET ACTIVATION
 ! (IACT, IBASE, ISUB) ARE NOT AVAILABLE IN CURRENT VERSION
-! FOR WRF-CHEM, DROPLET ACTIVATION IS PERFORMED 
+! FOR WRF-CHEM, DROPLET ACTIVATION IS PERFORMED
 ! IN 'MIX_ACTIVATE', NOT IN MICROPHYSICS SCHEME
 
 
@@ -274,20 +274,20 @@ SUBROUTINE MORR_TWO_MOMENT_INIT
 
       IACT = 2
 
-! IBASE = 1, NEGLECT DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO 
+! IBASE = 1, NEGLECT DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO
 !             UNRESOLVED ENTRAINMENT AND MIXING, ACTIVATE
-!             AT CLOUD BASE OR IN REGION WITH LITTLE CLOUD WATER USING 
-!             NON-EQULIBRIUM SUPERSATURATION ASSUMING NO INITIAL CLOUD WATER, 
+!             AT CLOUD BASE OR IN REGION WITH LITTLE CLOUD WATER USING
+!             NON-EQULIBRIUM SUPERSATURATION ASSUMING NO INITIAL CLOUD WATER,
 !             IN CLOUD INTERIOR ACTIVATE USING EQUILIBRIUM SUPERSATURATION
-! IBASE = 2, ASSUME DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO 
+! IBASE = 2, ASSUME DROPLET ACTIVATION AT LATERAL CLOUD EDGES DUE TO
 !             UNRESOLVED ENTRAINMENT AND MIXING DOMINATES,
 !             ACTIVATE DROPLETS EVERYWHERE IN THE CLOUD USING NON-EQUILIBRIUM
-!             SUPERSATURATION ASSUMING NO INITIAL CLOUD WATER, BASED ON THE 
-!             LOCAL SUB-GRID AND/OR GRID-SCALE VERTICAL VELOCITY 
+!             SUPERSATURATION ASSUMING NO INITIAL CLOUD WATER, BASED ON THE
+!             LOCAL SUB-GRID AND/OR GRID-SCALE VERTICAL VELOCITY
 !             AT THE GRID POINT
 
 ! NOTE: ONLY USED FOR PREDICTED DROPLET CONCENTRATION (INUM = 0)
- 
+
       IBASE = 2
 
 ! INCLUDE SUB-GRID VERTICAL VELOCITY (standard deviation of w) IN DROPLET ACTIVATION
@@ -297,7 +297,7 @@ SUBROUTINE MORR_TWO_MOMENT_INIT
 
 ! NOTE: ONLY USED FOR PREDICTED DROPLET CONCENTRATION (INUM = 0)
 
-      ISUB = 0      
+      ISUB = 0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -344,7 +344,7 @@ SUBROUTINE MORR_TWO_MOMENT_INIT
 	 AG = 19.3
 	 BG = 0.37
          ELSE ! (MATSUN AND HUGGINS 1980)
-         AG = 114.5 
+         AG = 114.5
          BG = 0.5
          END IF
 
@@ -416,12 +416,12 @@ SUBROUTINE MORR_TWO_MOMENT_INIT
 ! NCCN = C*S^K, NCCN IS IN CM-3, S IS SUPERSATURATION RATIO IN %
 
               K1 = 0.4
-              C1 = 120. 
+              C1 = 120.
 
 ! CONTINENTAL
 
 !              K1 = 0.5
-!              C1 = 1000. 
+!              C1 = 1000.
 
 ! AEROSOL ACTIVATION PARAMETERS FOR IACT = 2
 ! PARAMETERS CURRENTLY SET FOR AMMONIUM SULFATE
@@ -436,7 +436,7 @@ SUBROUTINE MORR_TWO_MOMENT_INIT
          RR = 8.3187
          BACT = VI*OSM*EPSM*MW*RHOA/(MAP*RHOW)
 
-! AEROSOL SIZE DISTRIBUTION PARAMETERS CURRENTLY SET FOR MPACE 
+! AEROSOL SIZE DISTRIBUTION PARAMETERS CURRENTLY SET FOR MPACE
 ! (see morrison et al. 2007, JGR)
 ! MODE 1
 
@@ -522,7 +522,7 @@ END SUBROUTINE MORR_TWO_MOMENT_INIT
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! THIS SUBROUTINE IS MAIN INTERFACE WITH THE TWO-MOMENT MICROPHYSICS SCHEME
 ! THIS INTERFACE TAKES IN 3D VARIABLES FROM DRIVER MODEL, CONVERTS TO 1D FOR
-! CALL TO THE MAIN MICROPHYSICS SUBROUTINE (SUBROUTINE MORR_TWO_MOMENT_MICRO) 
+! CALL TO THE MAIN MICROPHYSICS SUBROUTINE (SUBROUTINE MORR_TWO_MOMENT_MICRO)
 ! WHICH OPERATES ON 1D VERTICAL COLUMNS.
 ! 1D VARIABLES FROM THE MAIN MICROPHYSICS SUBROUTINE ARE THEN REASSIGNED BACK TO 3D FOR OUTPUT
 ! BACK TO DRIVER MODEL USING THIS INTERFACE.
@@ -541,14 +541,14 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 		SNOWNC,SNOWNCV,GRAUPELNC,GRAUPELNCV,    & ! hm added 7/13/13
                 refl_10cm, diagflag, do_radar_ref,      & ! GT added for reflectivity calcs
                 qrcuten, qscuten, qicuten, mu           & ! hm added
-               ,F_QNDROP, qndrop                        & ! hm added, wrf-chem 
+               ,F_QNDROP, qndrop                        & ! hm added, wrf-chem
                ,IDS,IDE, JDS,JDE, KDS,KDE               & ! domain dims
                ,IMS,IME, JMS,JME, KMS,KME               & ! memory dims
                ,ITS,ITE, JTS,JTE, KTS,KTE               & ! tile   dims            )
 !jdf		   ,C2PREC3D,CSED3D,ISED3D,SSED3D,GSED3D,RSED3D & ! HM ADD, WRF-CHEM
 		   ,QLSINK,PRECR,PRECI,PRECS,PRECG &        ! HM ADD, WRF-CHEM
                                             )
- 
+
 ! QV - water vapor mixing ratio (kg/kg)
 ! QC - cloud water mixing ratio (kg/kg)
 ! QR - rain water mixing ratio (kg/kg)
@@ -610,6 +610,12 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 
 ! WVAR - STANDARD DEVIATION OF SUB-GRID VERTICAL VELOCITY (M/S)
 
+#ifdef WRFSTAT
+  ! Tak Yamaguchi 2012/04
+  USE module_statistics, ONLY: docollect_data, doavgprecflux, precipl_eta, precipi_eta, &
+                               vfmi_eta, cond_rate_eta, evap_rate_eta, deps_rate_eta, subl_rate_eta
+#endif /*WRFSTAT*/
+
    IMPLICIT NONE
 
    INTEGER,      INTENT(IN   )    ::   ids, ide, jds, jde, kds, kde , &
@@ -618,7 +624,10 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 ! Temporary changed from INOUT to IN
 
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT):: &
-                          qv, qc, qr, qi, qs, qg, ni, ns, nr, TH, NG   
+                          qv, qc, qr, qi, qs, qg, ni, ns, nr, TH, NG
+
+  REAL, DIMENSION(ims:ime, kms:kme, jms:jme) :: prl_flx,pri_flx,cond,deps,vtmi,evap,subl ! Tak Yamaguchi 2012/04 Bug fix: these should not be declared with INTENT
+
 !jdf                      qndrop ! hm added, wrf-chem
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), optional,INTENT(INOUT):: qndrop
 !jdf  REAL, DIMENSION(ims:ime, kms:kme, jms:jme),INTENT(INOUT):: CSED3D, &
@@ -649,12 +658,14 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
    REAL, DIMENSION(its:ite, kts:kte, jts:jte)::                     &
                       T, WVAR, EFFC
 
-   REAL, DIMENSION(kts:kte) ::                                                                & 
+   REAL, DIMENSION(kts:kte) ::                                                                &
                             QC_TEND1D, QI_TEND1D, QNI_TEND1D, QR_TEND1D,                      &
                             NI_TEND1D, NS_TEND1D, NR_TEND1D,                                  &
                             QC1D, QI1D, QR1D,NI1D, NS1D, NR1D, QS1D,                          &
                             T_TEND1D,QV_TEND1D, T1D, QV1D, P1D, W1D, WVAR1D,         &
                             EFFC1D, EFFI1D, EFFS1D, EFFR1D,DZ1D,   &
+                            prl_flx1d,pri_flx1d,cond1d,deps1d,vtmi1d, &
+                            evap1d,subl1d, &  ! hm 1D output added
    ! HM ADD GRAUPEL
                             QG_TEND1D, NG_TEND1D, QG1D, NG1D, EFFG1D, &
 
@@ -675,10 +686,10 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
   integer :: iinum ! wrf-chem
 
 ! wrf-chem
-   REAL, DIMENSION(kts:kte) :: nc1d, nc_tend1d,C2PREC,CSED,ISED,SSED,GSED,RSED    
-! HM add reflectivity      
+   REAL, DIMENSION(kts:kte) :: nc1d, nc_tend1d,C2PREC,CSED,ISED,SSED,GSED,RSED
+! HM add reflectivity
    REAL, DIMENSION(kts:kte) :: dBZ
-                          
+
    REAL PRECPRT1D, SNOWRT1D, SNOWPRT1D, GRPLPRT1D ! hm added 7/13/13
 
    INTEGER I,K,J
@@ -695,7 +706,7 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 
    ! Initialize tendencies (all set to 0) and transfer
    ! array to local variables
-   DT = DT_IN   
+   DT = DT_IN
 
    DO I=ITS,ITE
    DO J=JTS,JTE
@@ -759,6 +770,17 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
           qrcu1d(k)     = qrcuten(i,k,j)/mu(i,j)
           qscu1d(k)     = qscuten(i,k,j)/mu(i,j)
           qicu1d(k)     = qicuten(i,k,j)/mu(i,j)
+
+! hm initialize added 1d output
+
+       prl_flx1d(k)=0.
+       pri_flx1d(k)=0.
+       cond1d(k)=0.
+       deps1d(k)=0.
+       vtmi1d(k)=0.
+       evap1d(k)=0.
+       subl1d(k)=0.
+
       end do  !jdf added this
 ! below for wrf-chem
    IF (flag_qndrop .AND. PRESENT( qndrop )) THEN
@@ -789,6 +811,7 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
                                     qrcu1d, qscu1d, qicu1d, &
 ! ADD SEDIMENTATION TENDENCIES
                                   QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
+                            prl_flx1d,pri_flx1d,cond1d,deps1d,vtmi1d,evap1d,subl1d, &
                                   nc1d, nc_tend1d, iinum, C2PREC,CSED,ISED,SSED,GSED,RSED & !wrf-chem
                        )
 
@@ -797,7 +820,7 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
    !
       do k=kts,kte
 
-! hm, add tendencies to update global variables 
+! hm, add tendencies to update global variables
 ! HM, TENDENCIES FOR Q AND N NOW ADDED IN M2005MICRO, SO WE
 ! ONLY NEED TO TRANSFER 1D VARIABLES BACK TO 3D
 
@@ -806,7 +829,7 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
           QS(i,k,j)        = QS1D(k)
           QR(i,k,j)        = QR1D(k)
           NI(i,k,j)        = NI1D(k)
-          NS(i,k,j)        = NS1D(k)          
+          NS(i,k,j)        = NS1D(k)
           NR(i,k,j)        = NR1D(k)
 	  QG(I,K,j)        = QG1D(K)
           NG(I,K,j)        = NG1D(K)
@@ -844,6 +867,16 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 !          EFFIS(I,K,J)     = MIN(EFFI(I,K,J),130.)
 !          EFFIS(I,K,J)     = MAX(EFFIS(I,K,J),13.)
 
+! convert 1D output back to 3D
+
+          prl_flx(i,k,j)=prl_flx1d(k)
+          pri_flx(i,k,j)=pri_flx1d(k)
+          cond(i,k,j)=cond1d(k)
+          deps(i,k,j)=deps1d(k)
+          vtmi(i,k,j)=vtmi1d(k)
+          evap(i,k,j)=evap1d(k)
+          subl(i,k,j)=subl1d(k)
+
       end do
 
 ! hm modified so that m2005 precip variables correctly match wrf precip variables
@@ -869,7 +902,44 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 !+---+-----------------------------------------------------------------+
 
    end do
-   end do   
+   end do
+
+#ifdef WRFSTAT
+  ! Tak Yamaguchi 2012/04 - Collect data for module_statistics.F
+  IF ( doavgprecflux ) THEN
+    DO i = its, ite
+      DO j = jts, jte
+        DO k = kts, kte
+          precipl_eta(i,k,j) = precipl_eta(i,k,j) + prl_flx(i,k,j) * 1.E-6   ! g/m2/s ==> mm/s
+          precipi_eta(i,k,j) = precipi_eta(i,k,j) + pri_flx(i,k,j) * 1.E-6   ! g/m2/s ==> mm/s
+        ENDDO
+      ENDDO
+    ENDDO
+  ENDIF
+  IF ( docollect_data ) THEN
+    DO i = its, ite
+      DO j = jts, jte
+        DO k = kts, kte
+          vfmi_eta(i,k,j) = vtmi(i,k,j)   ! m/s
+          cond_rate_eta(i,k,j) =   cond(i,k,j) / rho(i,k,j) / 1000.   ! g/m3/s ==> kg/kg/s
+          evap_rate_eta(i,k,j) = - evap(i,k,j) / rho(i,k,j) / 1000.   ! positively defined
+          deps_rate_eta(i,k,j) =   deps(i,k,j) / rho(i,k,j) / 1000.   ! g/m3/s ==> kg/kg/s
+          subl_rate_eta(i,k,j) = - subl(i,k,j) / rho(i,k,j) / 1000.   ! positively defined
+        ENDDO
+      ENDDO
+    ENDDO
+    IF ( .NOT.doavgprecflux ) THEN
+      DO i = its, ite
+        DO j = jts, jte
+          DO k = kts, kte
+            precipl_eta(i,k,j) = prl_flx(i,k,j) * 1.E-6   ! g/m2/s ==> mm/s
+            precipi_eta(i,k,j) = pri_flx(i,k,j) * 1.E-6   ! g/m2/s ==> mm/s
+          ENDDO
+        ENDDO
+      ENDDO
+    ENDIF
+  ENDIF
+#endif /*WRFSTAT*/
 
 END SUBROUTINE MP_MORR_TWO_MOMENT
 
@@ -884,6 +954,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                                             ITS,ITE, JTS,JTE, KTS,KTE,           & ! ADD GRAUPEL
                         QG3DTEN,NG3DTEN,QG3D,NG3D,EFFG,qrcu1d,qscu1d, qicu1d,    &
                         QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
+          prl_flx1d,pri_flx1d,cond1d,deps1d,vtmi1d,evap1d,subl1d, & !hm
                         nc3d,nc3dten,iinum, & ! wrf-chem
 				c2prec,CSED,ISED,SSED,GSED,RSED  &  ! hm added, wrf-chem
                         )
@@ -958,7 +1029,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
       REAL, DIMENSION(KTS:KTE) ::  QRSTEN            ! RAIN SED TEND (KG/KG/S)
       REAL, DIMENSION(KTS:KTE) ::  QISTEN            ! CLOUD ICE SED TEND (KG/KG/S)
       REAL, DIMENSION(KTS:KTE) ::  QNISTEN           ! SNOW SED TEND (KG/KG/S)
-      REAL, DIMENSION(KTS:KTE) ::  QCSTEN            ! CLOUD WAT SED TEND (KG/KG/S)      
+      REAL, DIMENSION(KTS:KTE) ::  QCSTEN            ! CLOUD WAT SED TEND (KG/KG/S)
 
 ! hm add cumulus tendencies for precip
         REAL, DIMENSION(KTS:KTE) ::   qrcu1d
@@ -1121,6 +1192,11 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
       REAL FALTNDNR
       REAL, DIMENSION(KTS:KTE) ::   FNR
 
+! hm added 1d output
+      REAL, INTENT( INOUT), DIMENSION(KTS:KTE) :: &
+           prl_flx1d,pri_flx1d,cond1d,deps1d,vtmi1d, &
+           evap1d,subl1d
+
 ! FALL-SPEED PARAMETER 'A' WITH AIR DENSITY CORRECTION
 
       REAL, DIMENSION(KTS:KTE) ::    AIN,ARN,ASN,ACN,AGN
@@ -1157,7 +1233,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
      INTEGER K,NSTEP,N ! ,I
 
 ! LTRUE IS ONLY USED TO SPEED UP THE CODE !!
-! LTRUE, SWITCH = 0, NO HYDROMETEORS IN COLUMN, 
+! LTRUE, SWITCH = 0, NO HYDROMETEORS IN COLUMN,
 !               = 1, HYDROMETEORS IN COLUMN
 
       INTEGER LTRUE
@@ -1197,7 +1273,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
         INTEGER IDROP
 
 ! FOR WRF-CHEM
-	REAL, DIMENSION(KTS:KTE)::C2PREC,CSED,ISED,SSED,GSED,RSED 
+	REAL, DIMENSION(KTS:KTE)::C2PREC,CSED,ISED,SSED,GSED,RSED
 
 ! comment lines for wrf-chem since these are intent(in) in that case
 !       REAL, DIMENSION(KTS:KTE) ::  NC3DTEN            ! CLOUD DROPLET NUMBER CONCENTRATION (1/KG/S)
@@ -1358,7 +1434,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 
 ! fix 053011
 !            AIN(K) = DUM*AI
-! AA revision 4/1/11: Ikawa and Saito 1991 air-density correction 
+! AA revision 4/1/11: Ikawa and Saito 1991 air-density correction
             AIN(K) = (RHOSU/RHO(K))**0.35*AI
             ARN(K) = DUM*AR
             ASN(K) = DUM*AS
@@ -1407,7 +1483,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
             ABI(K) = 1.+DQSIDT*XXLS(K)/CPM(K)
             AB(K) = 1.+DQSDT*XXLV(K)/CPM(K)
 
-! 
+!
 !.....................................................................
 !.....................................................................
 ! CASE FOR TEMPERATURE ABOVE FREEZING
@@ -1660,7 +1736,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                   0.08*UMS*UMR)**0.5*RHO(K)*                      &
                   N0RR(K)*N0S(K)/LAMR(K)**3*                              &
                   (5./(LAMR(K)**3*LAMS(K))+                    &
-                  2./(LAMR(K)**2*LAMS(K)**2)+                  &				 
+                  2./(LAMR(K)**2*LAMS(K)**2)+                  &
                   0.5/(LAMR(k)*LAMS(k)**3)))
 
 ! fix 053011, npracs no longer subtracted from snow
@@ -1709,7 +1785,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                  1./(LAMR(K)**2*LAMG(K)**2)+                   &
                  1./(LAMR(K)*LAMG(K)**3))
 
-! hm 7/15/13, remove limit so that the number of collected drops can smaller than 
+! hm 7/15/13, remove limit so that the number of collected drops can smaller than
 ! number of shed drops
 !            NPRACG(K)=MAX(NPRACG(K)-DUM,0.)
             NPRACG(K)=NPRACG(K)-DUM
@@ -1799,7 +1875,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                     SC(K)**(1./3.)*CONS10/                   &
                (LAMS(K)**CONS35))
 ! hm fix 8/4/08
-        EVPMS(K) = (QV3D(K)-QVS(K))*EPSS/AB(K)    
+        EVPMS(K) = (QV3D(K)-QVS(K))*EPSS/AB(K)
         EVPMS(K) = MAX(EVPMS(K),PSMLT(K))
         PSMLT(K) = PSMLT(K)-EVPMS(K)
       END IF
@@ -1906,7 +1982,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
         RATIO = (QR3D(K)/DT+PRACS(K)+PRACG(K)+PRA(K)+PRC(K)-PSMLT(K)-PGMLT(K))/ &
                         (-PRE(K))
         PRE(K) = PRE(K)*RATIO
-        
+
         END IF
 
 !....................................
@@ -1986,6 +2062,19 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
       QV3DTEN(K) = QV3DTEN(K)-PCC(K)
       T3DTEN(K) = T3DTEN(K)+PCC(K)*XXLV(K)/CPM(K)
       QC3DTEN(K) = QC3DTEN(K)+PCC(K)
+
+! hm add output
+      if (pcc(k).gt.0.) then
+      cond1d(k)=pcc(k)*rho(k)*1000.
+      end if
+      if (pcc(k).lt.0.) then
+      evap1d(k)=evap1d(k)+pcc(k)*rho(k)*1000.
+      end if
+      if (pre(k).lt.0.) then
+      evap1d(k)=evap1d(k)+pre(k)*rho(k)*1000.
+      end if
+! add evaporation of melting snow and graupel
+      evap1d(k)=evap1d(k)+(evpms(k)+evpmg(k))*rho(k)*1000.
 
 !.......................................................................
 ! ACTIVATION OF CLOUD DROPLETS
@@ -2272,7 +2361,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 ! BASED ON BROWNIAN DIFFUSION
 
             DAP(K) = CONS37*T3D(K)*(1.+DUM/RIN)/MU(K)
- 
+
            MNUCCC(K) = CONS38*DAP(K)*NACNT*EXP(LOG(CDIST1(K))+   &
                    LOG(GAMMA(PGAM(K)+5.))-4.*LOG(LAMC(K)))
            NNUCCC(K) = 2.*PI*DAP(K)*NACNT*CDIST1(K)*           &
@@ -2426,7 +2515,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                   0.08*UMS*UMR)**0.5*RHO(K)*                      &
                   N0RR(K)*N0S(K)/LAMR(K)**3*                              &
                   (5./(LAMR(K)**3*LAMS(K))+                    &
-                  2./(LAMR(K)**2*LAMS(K)**2)+                  &				 
+                  2./(LAMR(K)**2*LAMS(K)**2)+                  &
                   0.5/(LAMR(k)*LAMS(k)**3)))
 
             NPRACS(K) = CONS32*RHO(K)*(1.7*(UNR-UNS)**2+            &
@@ -2452,7 +2541,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                  N0RR(K)*N0S(K)/LAMS(K)**3*                               &
                   (5./(LAMS(K)**3*LAMR(K))+                    &
                   2./(LAMS(K)**2*LAMR(K)**2)+                  &
-                  0.5/(LAMS(K)*LAMR(K)**3)))            
+                  0.5/(LAMS(K)*LAMR(K)**3)))
             END IF
 !            END IF
 
@@ -2460,7 +2549,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 
 !.......................................................................
 
-! COLLECTION OF RAINWATER BY GRAUPEL, FROM IKAWA AND SAITO 1990, 
+! COLLECTION OF RAINWATER BY GRAUPEL, FROM IKAWA AND SAITO 1990,
 ! USED BY REISNER ET AL 1998
          IF (QR3D(K).GE.1.E-8.AND.QG3D(K).GE.1.E-8) THEN
 
@@ -2562,7 +2651,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
          END IF
 
 !.......................................................................
-! RIME-SPLINTERING - GRAUPEL 
+! RIME-SPLINTERING - GRAUPEL
 ! HALLET-MOSSOP (1974)
 ! NUMBER OF SPLINTERS FORMED IS BASED ON MASS OF RIMED WATER
 
@@ -2634,10 +2723,10 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 ! PORTION OF RIMING CONVERTED TO GRAUPEL (REISNER ET AL. 1998, ORIGINALLY IS1991)
 	     PGSACW(K) = MIN(PSACWS(K),CONS17*DT*N0S(K)*QC3D(K)*QC3D(K)* &
                           ASN(K)*ASN(K)/ &
-                           (RHO(K)*LAMS(K)**(2.*BS+2.))) 
+                           (RHO(K)*LAMS(K)**(2.*BS+2.)))
 
 ! MIX RAT CONVERTED INTO GRAUPEL AS EMBRYO (REISNER ET AL. 1998, ORIG M1990)
-	     DUM = MAX(RHOSN/(RHOG-RHOSN)*PGSACW(K),0.) 
+	     DUM = MAX(RHOSN/(RHOG-RHOSN)*PGSACW(K),0.)
 
 ! NUMBER CONCENTRAITON OF EMBRYO GRAUPEL FROM RIMING OF SNOW
 	     NSCNG(K) = DUM/MG0*RHO(K)
@@ -2655,8 +2744,8 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 ! ONLY ALLOW CONVERSION IF QNI > 0.1 AND QR > 0.1 G/KG FOLLOWING RUTLEDGE AND HOBBS (1984)
               IF (QNI3D(K).GE.0.1E-3.AND.QR3D(K).GE.0.1E-3) THEN
 ! PORTION OF COLLECTED RAINWATER CONVERTED TO GRAUPEL (REISNER ET AL. 1998)
-	      DUM = CONS18*(4./LAMS(K))**3*(4./LAMS(K))**3 &    
-                   /(CONS18*(4./LAMS(K))**3*(4./LAMS(K))**3+ &  
+	      DUM = CONS18*(4./LAMS(K))**3*(4./LAMS(K))**3 &
+                   /(CONS18*(4./LAMS(K))**3*(4./LAMS(K))**3+ &
                    CONS19*(4./LAMR(K))**3*(4./LAMR(K))**3)
               DUM=MIN(DUM,1.)
               DUM=MAX(DUM,0.)
@@ -2782,7 +2871,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                 LAMR(K)**(BR+3.)*RHO(K)
             NIACR(K)=MIN(NIACR(K),NR3D(K)/DT)
             NIACR(K)=MIN(NIACR(K),NI3D(K)/DT)
-            ELSE 
+            ELSE
             NIACRS(K)=CONS24*NI3D(K)*N0RR(K)*ARN(K) &
                 /LAMR(K)**(BR+3.)*RHO(K)
             PIACRS(K)=CONS25*NI3D(K)*N0RR(K)*ARN(K) &
@@ -2883,7 +2972,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 ! DUM IS FRACTION OF D*N(D) < DCS
 
 ! LOGIC BELOW FOLLOWS THAT OF HARRINGTON ET AL. 1995 (JAS)
-              IF (QI3D(K).GE.QSMALL) THEN              
+              IF (QI3D(K).GE.QSMALL) THEN
               DUM=(1.-EXP(-LAMI(K)*DCS)*(1.+LAMI(K)*DCS))
               PRD(K) = EPSI*(QV3D(K)-QVI(K))/ABI(K)*DUM
               ELSE
@@ -3012,7 +3101,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
         PSACWG(K) = PSACWG(K)*RATIO
 	PGSACW(K) = PGSACW(K)*RATIO
         END IF
- 
+
 ! CONSERVATION OF QI
 
       DUM = (-PRD(K)-MNUCCC(K)+PRCI(K)+PRAI(K)-QMULTS(K)-QMULTG(K)-QMULTR(K)-QMULTRG(K) &
@@ -3176,6 +3265,35 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
       QV3DTEN(K) = QV3DTEN(K)-PCC(K)
       T3DTEN(K) = T3DTEN(K)+PCC(K)*XXLV(K)/CPM(K)
       QC3DTEN(K) = QC3DTEN(K)+PCC(K)
+
+! hm add output
+      if (pcc(k).gt.0.) then
+      cond1d(k)=pcc(k)*rho(k)*1000.
+      end if
+      if (pcc(k).lt.0.) then
+      evap1d(k)=evap1d(k)+pcc(k)*rho(k)*1000.
+      end if
+      if (pre(k).lt.0.) then
+      evap1d(k)=evap1d(k)+pre(k)*rho(k)*1000.
+      end if
+      if (prd(k).gt.0.) then
+         deps1d(k)=deps1d(k)+prd(k)*rho(k)*1000.
+      end if
+      if (prds(k).gt.0.) then
+         deps1d(k)=deps1d(k)+prds(k)*rho(k)*1000.
+      end if
+      if (prdg(k).gt.0.) then
+         deps1d(k)=deps1d(k)+prdg(k)*rho(k)*1000.
+      end if
+      if (eprd(k).lt.0.) then
+         subl1d(k)=subl1d(k)+eprd(k)*rho(k)*1000.
+      end if
+      if (eprds(k).lt.0.) then
+         subl1d(k)=subl1d(k)+eprds(k)*rho(k)*1000.
+      end if
+      if (eprdg(k).lt.0.) then
+         subl1d(k)=subl1d(k)+eprdg(k)*rho(k)*1000.
+      end if
 
 !.......................................................................
 ! ACTIVATION OF CLOUD DROPLETS
@@ -3393,6 +3511,13 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
         UMG=MIN(UMG,20.*dum)
         UNG=MIN(UNG,20.*dum)
 
+! hm add output for ice fallspeed
+
+        if (dumi(k)+dumqs(k)+dumg(k).ge.qsmall) then
+           vtmi1d(k)=(dumi(k)*umi+dumqs(k)*ums+dumg(k)*umg)/ &
+            (dumi(k)+dumqs(k)+dumg(k))
+        end if
+
       FR(K) = UMR
       FI(K) = UMI
       FNI(K) = UNI
@@ -3546,6 +3671,10 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
       DUMFNC(K) = DUMFNC(K)+FALTNDNC*DT/NSTEP
       DUMG(K) = DUMG(K)+FALTNDG*DT/NSTEP
       DUMFNG(K) = DUMFNG(K)+FALTNDNG*DT/NSTEP
+
+! hm add output precip, note factor of 1000 is for kg --> g
+      prl_flx1d(k)=prl_flx1d(k)+(faloutc(k)+faloutr(k))/nstep*1000.
+      pri_flx1d(k)=pri_flx1d(k)+(falouti(k)+falouts(k)+faloutg(k))/nstep*1000.
 
 ! FOR WRF-CHEM, NEED PRECIP RATES (UNITS OF KG/M^2/S)
 	  CSED(K)=CSED(K)+FALOUTC(K)/NSTEP
@@ -3947,7 +4076,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
           NC3D(K) = MIN(NC3D(K),(NANEW1+NANEW2)/RHO(K))
           END IF
 ! SWITCH FOR CONSTANT DROPLET NUMBER
-          IF (iinum.EQ.1) THEN 
+          IF (iinum.EQ.1) THEN
 ! CHANGE NDCNST FROM CM-3 TO KG-1
              NC3D(K) = NDCNST*1.E6/RHO(K)
           END IF
@@ -3980,14 +4109,14 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
       REAL T
       INTEGER TYPE
 ! ice
-      real a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i 
+      real a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i
       data a0i,a1i,a2i,a3i,a4i,a5i,a6i,a7i,a8i /&
 	6.11147274, 0.503160820, 0.188439774e-1, &
         0.420895665e-3, 0.615021634e-5,0.602588177e-7, &
-        0.385852041e-9, 0.146898966e-11, 0.252751365e-14/	
+        0.385852041e-9, 0.146898966e-11, 0.252751365e-14/
 
 ! liquid
-      real a0,a1,a2,a3,a4,a5,a6,a7,a8 
+      real a0,a1,a2,a3,a4,a5,a6,a7,a8
 
 ! V1.7
       data a0,a1,a2,a3,a4,a5,a6,a7,a8 /&
@@ -4006,7 +4135,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 
 
       dt = max(-80.,t-273.16)
-      polysvp = a0i + dt*(a1i+dt*(a2i+dt*(a3i+dt*(a4i+dt*(a5i+dt*(a6i+dt*(a7i+a8i*dt))))))) 
+      polysvp = a0i + dt*(a1i+dt*(a2i+dt*(a3i+dt*(a4i+dt*(a5i+dt*(a6i+dt*(a7i+a8i*dt)))))))
       polysvp = polysvp*100.
 
       END IF
