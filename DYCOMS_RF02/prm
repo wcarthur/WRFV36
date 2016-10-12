@@ -1,0 +1,67 @@
+ &LESPRM
+
+ ! Logical flags
+ dospecifysst = .TRUE.
+ docompsfcflx = .FALSE.
+ docompsfcust = .FALSE.
+ dosfcspecial = .FALSE.
+ doupdategwnd = .FALSE.
+ dosubsidence = .TRUE.
+ doadvforcing = .FALSE.
+ doradforcing = .FALSE.
+ donudging_uv = .FALSE.
+ donudging_tq = .FALSE.
+ donudging_tp = .FALSE.
+ donudging_qv = .FALSE.
+ donudging_qt = .FALSE.
+ doupperbound = .TRUE.
+
+ ! Parameters
+ perturb_type = 2
+ sfcspecial_type = 0
+ surface_type = 2
+ coriolis  = 0.76e-4
+ latitude  = 31.5
+ longitude = -122.
+ tau_ndg   = -999.
+ tau_ndguv = -999.
+
+ ! Parameters for module_mp_feingold2m.F
+ xindex_feingold2m = 1
+ nccn_feingold2m   = 95.
+ dg_ccn_feingold2m = 0.2e-4
+ sg_ccn_feingold2m = 1.5
+ sg_cloud_feingold2m = 1.2
+ sg_rain_feingold2m  = 1.2
+ drzst_feingold2m  = 0.
+ drzflg_feingold2m = 1
+ colflg_feingold2m = .TRUE.
+ srcccn_add_feingold2m = .FALSE.
+ srcccn_starttime_feingold2m = 0.
+ srcccn_feingold2m = 0.
+ srcccn_qvmin_feingold2m = 100000.
+
+/ 
+
+ &STAT
+
+ stat_file_name ='wrf.stat'
+
+ nstat = 120
+ nstatfrq = 1
+ LES = .TRUE.
+ doavgprecflux = .FALSE.
+ docldconditionals = .FALSE.
+ docndconditionals = .FALSE.
+ docoreconditionals = .FALSE.
+ dosatupdnconditionals = .FALSE.
+ doupdnconditionals = .FALSE.
+ hrlayers = 20
+ qc_threshold = 20.
+ qi_threshold = 0.
+ qr_threshold = 0.
+ qs_threshold = 0.
+ qg_threshold = 0.
+ dousednc = .TRUE.
+
+/ 
