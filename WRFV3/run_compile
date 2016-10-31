@@ -1,17 +1,26 @@
-#!/bin/tcsh
+#!/bin/bash
 #PBS -l walltime=3600
 #PBS -l mem=4000MB
 #PBS -l ncpus=2
 #PBS -j oe
-#PBS -q normal
+#PBS -q express
 #PBS -l wd
-#PBS -l software=intel-cc/2:intel-fc/2
+#PBS -l software=intel-fc
 
+module purge
+module load pbs
+module load dot
 module load intel-fc
 module load intel-cc
-module load openmpi
-module load netcdf/4.2.1.1
-setenv WRFIO_NCD_LARGE_FILE_SUPPORT 1
+module load openmpi/1.8.8
+module load netcdf/4.3.3.1
 
-./compile em_real
+
+export WRFIO_NCD_LARGE_FILE_SUPPORT=1
+export JASPERLIB=/usr/lib64
+export JASPERINC=/usr/include
+export WRF_EM_CORE=1
+
+((./compile em_les) 3>&2 2>&1 1>&3 | tee compile.err) 2>&1 | tee compile.log
+
 
