@@ -54,11 +54,16 @@ endif
 #
 ifeq ($(PLATFORM),Linux)
 
-INC_NETCDF   := /usr/local/netCDF/netcdf-4.0-pgi/include
-LIB_NETCDF   := /usr/local/netCDF/netcdf-4.0-pgi/lib
 
-FF = pgf90 -Mfixed -Mextend -byteswapio -I${INC_NETCDF}
-LDFLAGS = -L${LIB_NETCDF} -lnetcdf
+#INC_NETCDF   := /usr/local/netCDF/netcdf-4.0-pgi/include
+#LIB_NETCDF   := /usr/local/netCDF/netcdf-4.0-pgi/lib
+
+INC_NETCDF    := /apps/netcdf/4.3.3.1/include
+LIB_NETCDF    := /apps/netcdf/4.3.3.1/lib
+
+#FF = pgf90 -Mfixed -Mextend -byteswapio -I${INC_NETCDF}
+FF = ifort -ffixed -convert big_endian -I${INC_NETCDF}
+LDFLAGS = -L${LIB_NETCDF} -lnetcdf -lnetcdff
 
 
 #INC_NETCDF   := /apps/nco/netcdf-final/netcdf-3.6.2/include
